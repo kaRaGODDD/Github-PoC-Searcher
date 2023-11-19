@@ -1,0 +1,304 @@
+[
+    {
+        "URL": "https://packetstormsecurity.com/files/175323/Citrix-Bleed-Session-Token-Leakage-Proof-Of-Concept.html",
+        "Date and Time": "Posted Oct 25, 2023 13:36:00 UTC",
+        "Author": "Authored by Assetnote Security Research Team | Site assetnote.io",
+        "CVE": "CVE-2023-4966"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/175152/Squid-Caching-Proxy-Proof-Of-Concepts.html",
+        "Date and Time": "Posted Oct 18, 2023 16:12:34 UTC",
+        "Author": "Authored by Joshua Rogers | Site megamansec.github.io",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174807/Elasticsearch-8.5.3-Stack-Overflow.html",
+        "Date and Time": "Posted Sep 22, 2023 17:36:12 UTC",
+        "Author": "Authored by Touhami Kasbaoui",
+        "CVE": "CVE-2023-31419"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174758/Packers-And-Movers-Management-System-1.0-SQL-Injection.html",
+        "Date and Time": "Posted Sep 19, 2023 15:35:19 UTC",
+        "Author": "Authored by Robert Cretu | Site robsware.github.io",
+        "CVE": "CVE-2023-30415"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174452/VMWare-Aria-Operations-For-Networks-Remote-Code-Execution.html",
+        "Date and Time": "Posted Sep  2, 2023 13:13:49 UTC",
+        "Author": "Authored by Harsh Jaiswal, Sina Kheirkhah, Rahul Maini | Site summoning.team",
+        "CVE": "CVE-2023-34039"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174448/Oracle-RMAN-Missing-Auditing.html",
+        "Date and Time": "Posted Sep  2, 2023 13:06:24 UTC",
+        "Author": "Authored by Emad Al-Mousa",
+        "CVE": "CVE-2021-2207"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174447/MsIo64-LOLDriver-Memory-Corruption.html",
+        "Date and Time": "Posted Aug 31, 2023 19:38:35 UTC",
+        "Author": "Authored by Russell Sanford",
+        "CVE": "CVE-2022-44898"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174397/Juniper-JunOS-SRX-EX-Remote-Code-Execution.html",
+        "Date and Time": "Posted Aug 30, 2023 15:01:37 UTC",
+        "Author": "Authored by watchTowr Labs Team | Site github.com",
+        "CVE": "CVE-2023-36844, CVE-2023-36845, CVE-2023-36846, CVE-2023-36847"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174385/GOM-Player-2.3.90.5360-MITM-Remote-Code-Execution.html",
+        "Date and Time": "Posted Aug 29, 2023 16:54:48 UTC",
+        "Author": "Authored by M. Akil Gundogan",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/173840/RansomLord-Anti-Ransomware-Exploit-Tool-1.0.html",
+        "Date and Time": "Posted Jul 31, 2023 16:35:28 UTC",
+        "Author": "Authored by hyp3rlinx, malvuln | Site malvuln.com",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/173722/Google-Chrome-115.0.5790.102-Memory-Corruption.html",
+        "Date and Time": "Posted Jul 25, 2023 14:16:15 UTC",
+        "Author": "Authored by Jean Pereira",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/173354/ServiceNow-Insecure-Access-Control-Full-Admin-Compromise.html",
+        "Date and Time": "Posted Jul 10, 2023 15:57:11 UTC",
+        "Author": "Authored by Nadeem Salim, Eldar Marcussen, Luke Symons, Jeff Thomas, Stephen Bradshaw, Tony Wu, Gareth Phillips | Site x64.sh",
+        "CVE": "CVE-2022-43684"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172966/WordPress-Abandoned-Cart-Lite-For-WooCommerce-5.14.2-Authentication-Bypass.html",
+        "Date and Time": "Posted Jun 16, 2023 16:02:43 UTC",
+        "Author": "Authored by ayantaker | Site github.com",
+        "CVE": "CVE-2023-2986"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html",
+        "Date and Time": "Posted Jun 13, 2023 01:48:29 UTC",
+        "Author": "Authored by Horizon3 Attack Team | Site github.com",
+        "CVE": "CVE-2023-34362"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172838/VIVO-SPARQL-Injection.html",
+        "Date and Time": "Posted Jun 12, 2023 03:52:02 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2019-6986"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172833/strongSwan-VPN-Charon-Server-Buffer-Overflow.html",
+        "Date and Time": "Posted Jun 12, 2023 03:48:34 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2018-5388"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172829/librelp-Remote-Code-Execution.html",
+        "Date and Time": "Posted Jun 12, 2023 03:43:00 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab, Rainer Gerhards, Bas van Schaik",
+        "CVE": "CVE-2018-1000140"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172849/polkit-File-Descriptor-Exhaustion.html",
+        "Date and Time": "Posted Jun 12, 2023 03:37:29 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2021-4115"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172837/Ansible-Fetch-Path-Traversal.html",
+        "Date and Time": "Posted Jun 12, 2023 03:10:19 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2019-3828"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172861/libssh-0.9.6-0.10.4-pki_verify_data_signature-Authorization-Bypass.html",
+        "Date and Time": "Posted Jun 12, 2023 03:03:39 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2023-2283"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172840/D-Bus-File-Descriptor-Leak-Denial-Of-Service.html",
+        "Date and Time": "Posted Jun 12, 2023 03:01:40 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2020-12049"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172827/Apple-XNU-Kernel-Memory-Exposure.html",
+        "Date and Time": "Posted Jun 12, 2023 02:50:37 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2017-13782"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172832/iOS-11.4.1-macOS-10.13.6-icmp_error-Heap-Buffer-Overflow.html",
+        "Date and Time": "Posted Jun 12, 2023 02:50:09 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2018-4407"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172831/macOS-NFS-Client-Buffer-Overflow.html",
+        "Date and Time": "Posted Jun 12, 2023 02:49:57 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2018-4259, CVE-2018-4286, CVE-2018-4287, CVE-2018-4288, CVE-2018-4291"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172828/Apple-packet-mangler-Remote-Code-Execution.html",
+        "Date and Time": "Posted Jun 12, 2023 02:49:43 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2017-13904, CVE-2018-4249"
+    }
+]
+[
+    {
+        "URL": "https://packetstormsecurity.com/files/175323/Citrix-Bleed-Session-Token-Leakage-Proof-Of-Concept.html",
+        "Date and Time": "Posted Oct 25, 2023 13:36:00 UTC",
+        "Author": "Authored by Assetnote Security Research Team | Site assetnote.io",
+        "CVE": "CVE-2023-4966"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/175152/Squid-Caching-Proxy-Proof-Of-Concepts.html",
+        "Date and Time": "Posted Oct 18, 2023 16:12:34 UTC",
+        "Author": "Authored by Joshua Rogers | Site megamansec.github.io",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174807/Elasticsearch-8.5.3-Stack-Overflow.html",
+        "Date and Time": "Posted Sep 22, 2023 17:36:12 UTC",
+        "Author": "Authored by Touhami Kasbaoui",
+        "CVE": "CVE-2023-31419"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174758/Packers-And-Movers-Management-System-1.0-SQL-Injection.html",
+        "Date and Time": "Posted Sep 19, 2023 15:35:19 UTC",
+        "Author": "Authored by Robert Cretu | Site robsware.github.io",
+        "CVE": "CVE-2023-30415"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174452/VMWare-Aria-Operations-For-Networks-Remote-Code-Execution.html",
+        "Date and Time": "Posted Sep  2, 2023 13:13:49 UTC",
+        "Author": "Authored by Harsh Jaiswal, Sina Kheirkhah, Rahul Maini | Site summoning.team",
+        "CVE": "CVE-2023-34039"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174448/Oracle-RMAN-Missing-Auditing.html",
+        "Date and Time": "Posted Sep  2, 2023 13:06:24 UTC",
+        "Author": "Authored by Emad Al-Mousa",
+        "CVE": "CVE-2021-2207"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174447/MsIo64-LOLDriver-Memory-Corruption.html",
+        "Date and Time": "Posted Aug 31, 2023 19:38:35 UTC",
+        "Author": "Authored by Russell Sanford",
+        "CVE": "CVE-2022-44898"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174397/Juniper-JunOS-SRX-EX-Remote-Code-Execution.html",
+        "Date and Time": "Posted Aug 30, 2023 15:01:37 UTC",
+        "Author": "Authored by watchTowr Labs Team | Site github.com",
+        "CVE": "CVE-2023-36844, CVE-2023-36845, CVE-2023-36846, CVE-2023-36847"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/174385/GOM-Player-2.3.90.5360-MITM-Remote-Code-Execution.html",
+        "Date and Time": "Posted Aug 29, 2023 16:54:48 UTC",
+        "Author": "Authored by M. Akil Gundogan",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/173840/RansomLord-Anti-Ransomware-Exploit-Tool-1.0.html",
+        "Date and Time": "Posted Jul 31, 2023 16:35:28 UTC",
+        "Author": "Authored by hyp3rlinx, malvuln | Site malvuln.com",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/173722/Google-Chrome-115.0.5790.102-Memory-Corruption.html",
+        "Date and Time": "Posted Jul 25, 2023 14:16:15 UTC",
+        "Author": "Authored by Jean Pereira",
+        "CVE": "Author did not provide CVE"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/173354/ServiceNow-Insecure-Access-Control-Full-Admin-Compromise.html",
+        "Date and Time": "Posted Jul 10, 2023 15:57:11 UTC",
+        "Author": "Authored by Nadeem Salim, Eldar Marcussen, Luke Symons, Jeff Thomas, Stephen Bradshaw, Tony Wu, Gareth Phillips | Site x64.sh",
+        "CVE": "CVE-2022-43684"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172966/WordPress-Abandoned-Cart-Lite-For-WooCommerce-5.14.2-Authentication-Bypass.html",
+        "Date and Time": "Posted Jun 16, 2023 16:02:43 UTC",
+        "Author": "Authored by ayantaker | Site github.com",
+        "CVE": "CVE-2023-2986"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172883/MOVEit-Transfer-SQL-Injection-Remote-Code-Execution.html",
+        "Date and Time": "Posted Jun 13, 2023 01:48:29 UTC",
+        "Author": "Authored by Horizon3 Attack Team | Site github.com",
+        "CVE": "CVE-2023-34362"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172838/VIVO-SPARQL-Injection.html",
+        "Date and Time": "Posted Jun 12, 2023 03:52:02 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2019-6986"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172833/strongSwan-VPN-Charon-Server-Buffer-Overflow.html",
+        "Date and Time": "Posted Jun 12, 2023 03:48:34 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2018-5388"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172829/librelp-Remote-Code-Execution.html",
+        "Date and Time": "Posted Jun 12, 2023 03:43:00 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab, Rainer Gerhards, Bas van Schaik",
+        "CVE": "CVE-2018-1000140"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172849/polkit-File-Descriptor-Exhaustion.html",
+        "Date and Time": "Posted Jun 12, 2023 03:37:29 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2021-4115"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172837/Ansible-Fetch-Path-Traversal.html",
+        "Date and Time": "Posted Jun 12, 2023 03:10:19 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2019-3828"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172861/libssh-0.9.6-0.10.4-pki_verify_data_signature-Authorization-Bypass.html",
+        "Date and Time": "Posted Jun 12, 2023 03:03:39 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2023-2283"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172840/D-Bus-File-Descriptor-Leak-Denial-Of-Service.html",
+        "Date and Time": "Posted Jun 12, 2023 03:01:40 UTC",
+        "Author": "Authored by GitHub Security Lab",
+        "CVE": "CVE-2020-12049"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172827/Apple-XNU-Kernel-Memory-Exposure.html",
+        "Date and Time": "Posted Jun 12, 2023 02:50:37 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2017-13782"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172832/iOS-11.4.1-macOS-10.13.6-icmp_error-Heap-Buffer-Overflow.html",
+        "Date and Time": "Posted Jun 12, 2023 02:50:09 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2018-4407"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172831/macOS-NFS-Client-Buffer-Overflow.html",
+        "Date and Time": "Posted Jun 12, 2023 02:49:57 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2018-4259, CVE-2018-4286, CVE-2018-4287, CVE-2018-4288, CVE-2018-4291"
+    },
+    {
+        "URL": "https://packetstormsecurity.com/files/172828/Apple-packet-mangler-Remote-Code-Execution.html",
+        "Date and Time": "Posted Jun 12, 2023 02:49:43 UTC",
+        "Author": "Authored by Kevin Backhouse, GitHub Security Lab",
+        "CVE": "CVE-2017-13904, CVE-2018-4249"
+    }
+]
