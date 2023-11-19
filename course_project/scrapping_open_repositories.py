@@ -80,7 +80,7 @@ async def parse_each_file_async(file,exploits_repository,repository_name : str,u
 async def parse_trickvest():
     
     user_name = "trickest"
-    github_token = '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'
+    github_token = ''
     from_github = Github(github_token)
     
     tricket_user = from_github.get_user(user_name)
