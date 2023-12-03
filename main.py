@@ -10,17 +10,18 @@ from dotenv import load_dotenv
 from repositories import get_user_repositories
 from git_clone_or_pull import clone_or_pull
 from increasing_file_descriptors import incr_file_descriptors
+from create_directories import create_directory
 
 load_dotenv()
 
-async def write_json(data: list, file_name : str):
-    os.chdir(os.getenv('DATA_DIRECTORY'))
+async def write_json(data : dict, file_name : str):
+    os.chdir(os.getenv('DATA_DIRECTORY') + "/" + os.getenv("USER_NAME"))
     async with aiofiles.open(f"{file_name}.json", 'w') as f:
         await f.write(json.dumps(data,indent=4,ensure_ascii=False))
 
 async def read_json(file_name : str):
     data_directory = os.getenv('DATA_DIRECTORY')
-    file_path = os.path.join(data_directory, f"{file_name}.json")
+    file_path = os.path.join(data_directory + "/" + os.getenv("USER_NAME"), f"{file_name}.json")
     if os.path.isfile(file_path):
         if os.path.getsize(file_path) == 0:
             return {}
@@ -41,7 +42,6 @@ async def new_version(directory_name : str,flag = False):
     for root,dirs,files in os.walk(path):
         for file_name in files:
             file_path = os.path.join(root,file_name)
-            data_directory = os.getenv('DATA_DIRECTORY')
             async with aiofiles.open(file_path,mode='r') as f:
                 contents = await f.read()
                 result = re.findall(r"#### Reference\n(- https?[\w:/.+a-z0-9-= \n @( )]+)",contents)
@@ -74,7 +74,9 @@ async def check_for_update(path_to_the_directory : str):
                 tg.create_task(new_version(repo.name,True))
     else:
         await incr_file_descriptors()
-        subprocess.call(['mkdir',os.getenv("DIRECTORY_NAME_FOR_STORE_THE_DATA")])
+        await create_directory(os.getenv("DIRECTORY_NAME_FOR_STORE_THE_DATA"))
+        os.chdir(os.getenv("DIRECTORY_NAME_FOR_STORE_THE_DATA"))
+        await create_directory(os.getenv("USER_NAME"))
         repositories, urls = get_user_repositories()
         clone_or_pull(os.getenv("URL_TO_REPOSITORY"),os.getenv("REPOSITORY_NAME"))
         async with asyncio.TaskGroup() as tg:
