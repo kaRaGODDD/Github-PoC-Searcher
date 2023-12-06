@@ -13,10 +13,16 @@ from increasing_file_descriptors import incr_file_descriptors
 
 load_dotenv()
 
-async def write_json(data: list, file_name : str):
+async def write_json(data: dict, file_name : str):
+    os.chdir(os.getenv('DATA_DIRECTORY'))
+    async with aiofiles.open(f"{file_name}.json", 'a') as f:
+        await f.write(json.dumps(data,indent=4,ensure_ascii=False))
+
+async def write_json_for_url_lst(data: dict, file_name : str):
     os.chdir(os.getenv('DATA_DIRECTORY'))
     async with aiofiles.open(f"{file_name}.json", 'w') as f:
         await f.write(json.dumps(data,indent=4,ensure_ascii=False))
+
 
 async def read_json(file_name : str):
     data_directory = os.getenv('DATA_DIRECTORY')
@@ -33,9 +39,11 @@ async def read_json(file_name : str):
 
 async def new_version(directory_name : str,flag = False):
     path = os.getenv("PATH_TO_DIRECTORY") + "/" + os.getenv("REPOSITORY_NAME") + "/" + directory_name
+    indicator = False
     if flag:
         data = await read_json(directory_name)
         fresh_data = {}
+        new_data_for_second_write = {}
     else:
         data = {}
     for root,dirs,files in os.walk(path):
@@ -50,19 +58,25 @@ async def new_version(directory_name : str,flag = False):
                     result = [url.replace("\n",'') for url in result]
                     urls = result[0].split('- ')
                     urls = [url for url in urls if url.startswith("http")]
-                    dictionary = {"CVE":file_name, "PoC" : urls}
                     if flag:
-                        fresh_data[file_name] = urls
+                        new_data_for_second_write[file_name] = urls
                         if data.get(file_name,"Not find") == "Not find":
+                            fresh_data[file_name] = urls
                             print(file_name)
                         elif len(data.get(file_name)) < len(urls):
-                             print(urls)
+                            indicator = True
+                            print(urls)
                     else:
                         data[file_name] = urls
-        if flag == True:
-            await write_json(fresh_data,directory_name)
+        if flag:
+            if indicator and new_data_for_second_write:
+                await write_json_for_url_lst(new_data_for_second_write,directory_name)
+            else:
+                if fresh_data:
+                    await write_json(fresh_data,directory_name)
         else:
-            await write_json(data,directory_name)
+            if data:
+                await write_json(data,directory_name)
 
 async def check_for_update(path_to_the_directory : str):
     if os.path.exists(path_to_the_directory):
