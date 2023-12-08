@@ -15,14 +15,8 @@ load_dotenv()
 
 async def write_json(data: dict, file_name : str):
     os.chdir(os.getenv('DATA_DIRECTORY'))
-    async with aiofiles.open(f"{file_name}.json", 'a') as f:
-        await f.write(json.dumps(data,indent=4,ensure_ascii=False))
-
-async def write_json_for_url_lst(data: dict, file_name : str):
-    os.chdir(os.getenv('DATA_DIRECTORY'))
     async with aiofiles.open(f"{file_name}.json", 'w') as f:
         await f.write(json.dumps(data,indent=4,ensure_ascii=False))
-
 
 async def read_json(file_name : str):
     data_directory = os.getenv('DATA_DIRECTORY')
@@ -39,7 +33,6 @@ async def read_json(file_name : str):
 
 async def new_version(directory_name : str,flag = False):
     path = os.getenv("PATH_TO_DIRECTORY") + "/" + os.getenv("REPOSITORY_NAME") + "/" + directory_name
-    indicator = False
     if flag:
         data = await read_json(directory_name)
         fresh_data = {}
@@ -61,19 +54,13 @@ async def new_version(directory_name : str,flag = False):
                     if flag:
                         new_data_for_second_write[file_name] = urls
                         if data.get(file_name,"Not find") == "Not find":
-                            fresh_data[file_name] = urls
                             print(file_name)
                         elif len(data.get(file_name)) < len(urls):
-                            indicator = True
-                            print(urls)
+                            print(file_name, urls)
                     else:
                         data[file_name] = urls
-        if flag:
-            if indicator and new_data_for_second_write:
-                await write_json_for_url_lst(new_data_for_second_write,directory_name)
-            else:
-                if fresh_data:
-                    await write_json(fresh_data,directory_name)
+        if flag and new_data_for_second_write:
+            await write_json(new_data_for_second_write,directory_name)
         else:
             if data:
                 await write_json(data,directory_name)
