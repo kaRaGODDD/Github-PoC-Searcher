@@ -18,3 +18,6 @@ async def create_directory_by_user_name(name_of_the_directory : str):
         await asyncio.to_thread(os.chdir, data_dir)
         await asyncio.to_thread(os.makedirs, name_of_the_directory, exist_ok=True)
 
+async def just_create_folder(folder_name : str,user_name : str,d):
+    pass
+    #TODO that scrip for creating folder if i fond the folder and files in that folder and that files are good!!!
