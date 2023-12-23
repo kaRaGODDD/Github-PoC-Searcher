@@ -11,16 +11,11 @@ from github import Github
 from processing_repositories import processing_repository
 from math import ceil
 from datetime import datetime
+from typing import Optional
+
+from create_directories import create_directory_by_user_name
 
 load_dotenv()
-
-class Owner(BaseModel):
-    login: str
-
-class Repository(BaseModel):
-    name: str
-    owner: Owner
-    url: str
 
 async def how_many_pages_need_to_parse(url : str):
     PER_SEARCH = 30
@@ -41,13 +36,10 @@ async def get_users_and_their_repositories():
         async with aiohttp.ClientSession() as session:
             async with session.get(url + f"&page={i}") as response:
                 data = await response.json()
+                print(url + f"&page={i}")
                 for item in data["items"]:
-                    #TODO processing the repository function call here
-                    print(f"Page number {i} repository: {item['name']} -> Name of the user is {item['owner']['login']}")
-
-
-
-
+                    await create_directory_by_user_name(item["owner"]["login"])
+                    await processing_repository(item["owner"]["login"],item["name"])
 
 async def main():
     await get_users_and_their_repositories()
