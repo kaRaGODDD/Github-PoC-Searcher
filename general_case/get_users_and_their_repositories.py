@@ -6,7 +6,7 @@ import time
 import subprocess
 import re
 
-from write_file import write_last_date_scrapping
+from write_last_date import write_last_date_scrapping
 from formed_datetime_intervals import generate_intervals
 from create_directories import create_data_directory
 from dotenv import load_dotenv,set_key
