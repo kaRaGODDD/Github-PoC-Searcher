@@ -31,10 +31,7 @@ async def from_one_interval_to_second_scrapping(first_interval : str, second_int
     try:
         first_datetime_object = datetime.datetime.strptime(first_interval,"%Y-%m-%d")
         second_datetime_object = datetime.datetime.strptime(second_interval,"%Y-%m-%d")
-
-        if first_datetime_object.year != second_datetime_object.year or first_datetime_object.month != second_datetime_object.month:
-            raise Exception("Month and year should be the same")
-
+        
         if first_datetime_object > second_datetime_object:
             raise Exception("First date should be earlier than the second one")
         
