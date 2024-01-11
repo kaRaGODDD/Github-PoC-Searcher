@@ -50,7 +50,11 @@ async def from_one_interval_to_second_scrapping(first_interval : str, second_int
     try:
         first_datetime_object = datetime.datetime.strptime(first_interval,"%Y-%m-%d")
         second_datetime_object = datetime.datetime.strptime(second_interval,"%Y-%m-%d")
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> aace8b54ff7d2412b053c81d8b9df3a2bb2580c5
         if first_datetime_object > second_datetime_object:
             raise Exception("First date should be earlier than the second one")
         
