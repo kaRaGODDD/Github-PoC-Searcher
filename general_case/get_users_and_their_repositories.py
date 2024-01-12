@@ -18,6 +18,14 @@ class ParsingChoice(Enum):
     YEAR_BY_YEAR = auto()
     FROM_ONE_INTERVAL_TO_SECOND = auto()
     YEAR_AND_MONTH_FIXED = auto()
+    SINCE_LAST_SCRAPPING = auto()
+    MOST_POPULAR = auto()
+
+class IntervalType(Enum):
+    DAYS = 1
+    WEAKS = 7
+    MONTH = 31
+    YEAR = 365
 
 class Languages(Enum):
     PYTHON = auto()
@@ -28,7 +36,10 @@ async def return_token():
     return os.getenv("GITHUB_TOKEN")
 
 async def return_url():
-    return os.getenv("URL")
+    return "https://api.github.com/search/repositories?q=proof%20of%20concept%20created:{}..{}"
+
+async def return_last_date_scrapping():
+    return os.getenv("LAST_DATE_SCRAPPING")
 
 async def how_many_pages_need_to_parse(url: str, per_search: int):
     '''
@@ -112,7 +123,7 @@ async def process_page(url: str, page: int,headers: dict, per_page: int):
         async with asyncio.TaskGroup() as tg:
             tg.create_task(clone_repository(item["clone_url"],item["name"]))
 
-async def get_users_and_their_repositories(url_for_scrapping_pages: str,intervals: tuple, token: str,headers: dict,per_page: int):
+async def get_users_and_their_repositories(url_for_scrapping_pages: str, intervals: tuple, token: str,headers: dict,per_page: int):
     '''
     Async function that iterates over specified intervals, retrieves user repositories, and clones them.
 
@@ -127,7 +138,7 @@ async def get_users_and_their_repositories(url_for_scrapping_pages: str,interval
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
     '''
     await asyncio.to_thread(os.chdir, os.getenv("PATH_TO_THE_DATA_DIRECTORY"))
-    for i in range(0, len(intervals) + 1):
+    for i in range(0, len(intervals)):
         since, until = intervals[i]
         formatted_url = await asyncio.to_thread(os.getenv, "URL")
         formatted_url = formatted_url.format(since, until)
@@ -135,7 +146,7 @@ async def get_users_and_their_repositories(url_for_scrapping_pages: str,interval
         tasks = [process_page(formatted_url, j,headers,per_page) for j in range(0,pages_on_query + 1)]
         await asyncio.gather(*tasks)
 
-async def сloning_is_carried_out_by_year(headers: dict, url_for_scrapping_pages: str, token: str,first_year: int, second_year: int):
+async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers: dict, token: str,first_year: int, second_year: int):
     '''
     Async function that performs cloning based on specified year intervals.
 
@@ -152,8 +163,8 @@ async def сloning_is_carried_out_by_year(headers: dict, url_for_scrapping_pages
     Note:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
     '''
-    if first_year > 2024 or second_year > 2024:
-        raise Exception("First year and second year cannot be greater than 2024") 
+    if first_year > datetime.datetime.now().year or second_year > datetime.datetime.now().year:
+        raise Exception(f"First year and second year cannot be greater than {datetime.datetime.now().year}") 
     first_date = datetime.datetime(first_year,1,1).strftime("%Y-%m-%d")
     second_date = datetime.datetime(second_year,1,1).strftime("%Y-%m-%d")
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_date,second_date)
@@ -196,19 +207,84 @@ async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrap
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_interval,second_interval)
     await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
 
+async def formed_datetime_intervals_for_last_scrapping():
+    last_date_scrapping = await return_last_date_scrapping()
+    last_date_scrapping = await convert_datetime_object_to_ISO_8601(last_date_scrapping)
+    date_now = datetime.datetime.now().strftime("%Y-%m-%d%H:%M:%S")
+    date_now = await convert_datetime_object_to_ISO_8601(date_now)
+    return (last_date_scrapping,date_now)
+
+async def return_datetime_object_in_right_view(datetime_string: str,date_format: str = "%Y-%m-%d"):
+    return datetime.datetime.strptime(datetime_string,date_format)
+
+async def calculate_difference_between_two_dates(first_date: str, second_date: str):
+    first_datetime = await return_datetime_object_in_right_view(first_date,"%Y-%m-%dT%H:%M:%SZ")
+    second_datetime = await return_datetime_object_in_right_view(second_date,"%Y-%m-%dT%H:%M:%SZ")
+    return abs((first_datetime - second_datetime).days)
+
+async def to_strftime_format(last_date_scrapping: str, date_now: str):
+    first_interval = await return_datetime_object_in_right_view(last_date_scrapping,"%Y-%m-%dT%H:%M:%SZ")
+    first_interval = first_interval.strftime("%Y-%m-%d")
+    second_interval = await return_datetime_object_in_right_view(date_now,"%Y-%m-%dT%H:%M:%SZ")
+    second_interval = second_interval.strftime("%Y-%m-%d")
+    return (first_interval,second_interval)
+
+async def determine_interval_type(difference):
+    if difference <= 7:
+        return IntervalType.DAYS
+    elif difference < 31:
+        return IntervalType.WEAKS
+    elif difference <= 365:
+        return IntervalType.MONTHS
+    else:
+        return IntervalType.YEARS
+
+async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, token: str, rewrite_last_date_scrapping: bool):
+    last_date_scrapping, date_now = await formed_datetime_intervals_for_last_scrapping()
+    url_for_scrapping_pages = url_for_scrapping_pages.format(last_date_scrapping,date_now)
+    difference = await calculate_difference_between_two_dates(last_date_scrapping,date_now)
+    type_of_interval = await determine_interval_type(difference) 
+    if rewrite_last_date_scrapping:
+        await write_last_date_scrapping(datetime.datetime.now().strftime("%Y-%m-%d%H:%M:%S"))
+    match type_of_interval:
+        case IntervalType.YEAR:
+            first_interval = datetime.datetime.strptime(last_date_scrapping,"%Y-%m-%d").year
+            second_interval = datetime.datetime.strptime(date_now,"%Y-%m-%d").year
+            intervals = await generate_intervals(datetime.datetime.strptime(first_interval,second_interval))
+        case IntervalType.MONTH:
+            first_interval, second_interval = await to_strftime_format(last_date_scrapping,date_now)
+            intervals = await from_one_interval_to_second_scrapping(first_interval,second_interval)
+        case IntervalType.WEAKS:
+            first_interval, second_interval = await to_strftime_format(last_date_scrapping,date_now)
+            intervals = await year_month_fixed_iterate_day_by_day(first_interval,second_interval,7)
+        case IntervalType.DAYS:
+            first_interval, second_interval = await to_strftime_format(last_date_scrapping,date_now)
+            intervals = await year_month_fixed_iterate_day_by_day(first_interval,second_interval)
+        case _:
+            pass
+    await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
+
+async def most_popular_repositories(special_url_for_scrapping_pages):
+    pass
+
 async def main():
     token = await return_token()
     url_for_scrapping_pages = await return_url()
+    print(url_for_scrapping_pages)
     headers = {"Authorization": f"Bearer {token}"}
     await create_data_directory()
-    choice = ParsingChoice.FROM_ONE_INTERVAL_TO_SECOND
+    choice = ParsingChoice.SINCE_LAST_SCRAPPING
     match choice:
         case ParsingChoice.YEAR_BY_YEAR:
-            await сloning_is_carried_out_by_year(headers,url_for_scrapping_pages,token,2015,2016)
+            await сloning_is_carried_out_by_year(url_for_scrapping_pages,headers,token,2015,2016)
         case ParsingChoice.FROM_ONE_INTERVAL_TO_SECOND:
             await сloning_is_performed_at_specified_intervals(url_for_scrapping_pages,headers,token,"2015-03-05","2015-04-07")
         case ParsingChoice.YEAR_AND_MONTH_FIXED:
             await cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages,headers,token)
+        case ParsingChoice.SINCE_LAST_SCRAPPING:
+            await since_last_scrapping(url_for_scrapping_pages,headers,token,False)
+        case ParsingChoice.MOST_POPULAR:
+            pass
         case _:
             print("Doesnt know that option")
     
