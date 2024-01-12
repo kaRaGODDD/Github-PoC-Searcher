@@ -208,6 +208,12 @@ async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrap
     await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
 
 async def formed_datetime_intervals_for_last_scrapping():
+    '''
+    Async function that forms datetime intervals for the last scrapping session.
+
+    Returns:
+        tuple: A tuple containing two ISO 8601 formatted strings representing the last scrapping date and the current date.
+    '''
     last_date_scrapping = await return_last_date_scrapping()
     last_date_scrapping = await convert_datetime_object_to_ISO_8601(last_date_scrapping)
     date_now = datetime.datetime.now().strftime("%Y-%m-%d%H:%M:%S")
@@ -215,14 +221,44 @@ async def formed_datetime_intervals_for_last_scrapping():
     return (last_date_scrapping,date_now)
 
 async def return_datetime_object_in_right_view(datetime_string: str,date_format: str = "%Y-%m-%d"):
+    '''
+    Async function that converts a datetime string to a datetime object with the specified format.
+
+    Parameters:
+        - datetime_string (str): The datetime string to be converted.
+        - date_format (str): The format of the datetime string (default is "%Y-%m-%d").
+
+    Returns:
+        datetime.datetime: The datetime object.
+    '''
     return datetime.datetime.strptime(datetime_string,date_format)
 
 async def calculate_difference_between_two_dates(first_date: str, second_date: str):
+    '''
+    Async function that calculates the difference in days between two ISO 8601 formatted datetime strings.
+
+    Parameters:
+        - first_date (str): The first ISO 8601 formatted datetime string.
+        - second_date (str): The second ISO 8601 formatted datetime string.
+
+    Returns:
+        int: The absolute difference in days.
+    '''
     first_datetime = await return_datetime_object_in_right_view(first_date,"%Y-%m-%dT%H:%M:%SZ")
     second_datetime = await return_datetime_object_in_right_view(second_date,"%Y-%m-%dT%H:%M:%SZ")
     return abs((first_datetime - second_datetime).days)
 
 async def to_strftime_format(last_date_scrapping: str, date_now: str):
+    '''
+    Async function that converts ISO 8601 formatted datetime strings to "%Y-%m-%d" format.
+
+    Parameters:
+        - last_date_scrapping (str): The ISO 8601 formatted datetime string for the last scrapping date.
+        - date_now (str): The ISO 8601 formatted datetime string for the current date.
+
+    Returns:
+        tuple: A tuple containing two strings in "%Y-%m-%d" format representing the last scrapping date and the current date.
+    '''
     first_interval = await return_datetime_object_in_right_view(last_date_scrapping,"%Y-%m-%dT%H:%M:%SZ")
     first_interval = first_interval.strftime("%Y-%m-%d")
     second_interval = await return_datetime_object_in_right_view(date_now,"%Y-%m-%dT%H:%M:%SZ")
@@ -230,6 +266,15 @@ async def to_strftime_format(last_date_scrapping: str, date_now: str):
     return (first_interval,second_interval)
 
 async def determine_interval_type(difference):
+    '''
+    Async function that determines the type of time interval based on the difference in days.
+
+    Parameters:
+        - difference (int): The difference in days.
+
+    Returns:
+        IntervalType: An enumeration representing the type of time interval.
+    '''
     if difference <= 7:
         return IntervalType.DAYS
     elif difference < 31:
@@ -240,6 +285,19 @@ async def determine_interval_type(difference):
         return IntervalType.YEARS
 
 async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, token: str, rewrite_last_date_scrapping: bool):
+    '''
+    Async function that performs scrapping since the last recorded scrapping date.
+
+    Parameters:
+        - url_for_scrapping_pages (str): The base URL for scrapping pages.
+        - headers (dict): Headers to be included in the HTTP request.
+        - token (str): Authorization token for API requests.
+        - rewrite_last_date_scrapping (bool): Flag indicating whether to rewrite the last scrapping date.
+
+    Note:
+        This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
+        If rewrite_last_date_scrapping is True, it updates the last scrapping date.
+    '''
     last_date_scrapping, date_now = await formed_datetime_intervals_for_last_scrapping()
     url_for_scrapping_pages = url_for_scrapping_pages.format(last_date_scrapping,date_now)
     difference = await calculate_difference_between_two_dates(last_date_scrapping,date_now)
