@@ -1,19 +1,19 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 
-async def convert_datetime_object_to_ISO_8601(datetime_object):
+async def convert_datetime_object_to_ISO_8601(datetime_object: str):
     '''
     Converts a datetime object to ISO 8601 standard.
 
     Parameters:
-        - datetime_object: The datetime object to be converted.
+        - datetime_object: The string object to be converted.
 
     Returns:
         str: The ISO 8601 formatted string representation of the input datetime.
     '''
-    return datetime_object.strftime('%Y-%m-%dT%H:%M:%SZ')
+    return datetime.datetime.strptime(datetime_object, '%Y-%m-%d%H:%M:%S').isoformat() + "Z"
 
-async def generate_intervals(first_year : int, second_year : int):
+async def generate_intervals(first_year: int, second_year: int):
     '''
     Generates a list of tuples, each tuple representing the start and end date for each month between the specified years.
 
@@ -34,7 +34,7 @@ async def generate_intervals(first_year : int, second_year : int):
         ]
     return intervals
 
-async def from_one_interval_to_second_scrapping(first_interval : str, second_interval : str, flag : bool = False):
+async def from_one_interval_to_second_scrapping(first_interval: str, second_interval: str, flag: bool = False):
     '''
     Splits intervals into months if the number of repositories for the given queries is greater than 1000.
     Splitting is done by months for the given interval.
@@ -74,7 +74,7 @@ async def from_one_interval_to_second_scrapping(first_interval : str, second_int
 
     return first_interval, second_interval
 
-async def year_month_fixed_iterate_day_by_day(first_interval : str,second_interval : str):
+async def year_month_fixed_iterate_day_by_day(first_interval: str,second_interval: str, how_many_days: int = 1):
     '''
     Takes two string objects that fix the same year and month, but the function generates intervals through days.
 
@@ -104,9 +104,12 @@ async def year_month_fixed_iterate_day_by_day(first_interval : str,second_interv
     end_date = second_datetime_object
 
     while current_date < end_date:
-        next_day = min(current_date + relativedelta(days=1),end_date)
+        next_day = min(current_date + relativedelta(days=how_many_days),end_date)
         intervals.append((current_date.strftime("%Y-%m-%d"), next_day.strftime("%Y-%m-%d")))
         current_date = next_day
         
-
     return intervals
+
+async def transform_list_of_intervals(intervals: list):
+    new_list_of_intervals = []
+    return new_list_of_intervals
