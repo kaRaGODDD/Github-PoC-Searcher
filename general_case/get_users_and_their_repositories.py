@@ -7,7 +7,7 @@ import os
 
 from formed_datetime_intervals import *
 from write_last_date import write_last_date_scrapping
-from create_directories import create_data_directory
+from create_directories import create_data_directory, create_directory_on_pc
 from dotenv import load_dotenv, set_key
 from enum import Enum, auto
 from math import ceil
@@ -22,10 +22,10 @@ class ParsingChoice(Enum):
     MOST_POPULAR = auto()
 
 class IntervalType(Enum):
-    DAYS = 1
-    WEAKS = 7
-    MONTH = 31
-    YEAR = 365
+    DAYS = auto()
+    WEAKS = auto()
+    MONTH = auto()
+    YEAR = auto()
 
 class Languages(Enum):
     PYTHON = auto()
@@ -53,7 +53,6 @@ async def how_many_pages_need_to_parse(url: str, per_search: int):
     Returns:
         int: The calculated number of pages needed to parse all the repositories.
     '''
-
     if per_search > 100:
         raise Exception("Per search parameter cannot be greater than 100")
 
@@ -63,7 +62,7 @@ async def how_many_pages_need_to_parse(url: str, per_search: int):
             count = data["total_count"]
     return ceil(count / per_search)
 
-async def clone_repository(repository_url: str, repository_name: str):
+async def clone_repository(repository_url: str, repository_name: str,name_of_the_interval_directory: str):
     '''
     Async function that clones a repository based on its URL. If the repository is already cloned on the PC, it performs a git pull.
 
@@ -77,7 +76,7 @@ async def clone_repository(repository_url: str, repository_name: str):
     Note:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
     '''
-    path_to_data_directory = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
+    path_to_data_directory = os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"),name_of_the_interval_directory)
     path_to_repository = os.path.join(path_to_data_directory, repository_name)
     try:
         exists = await asyncio.to_thread(os.path.exists, path_to_repository)
@@ -108,7 +107,7 @@ async def return_data_from_query(url: str, page: int,headers: dict, per_page: in
             data = await response.json()
     return data    
 
-async def process_page(url: str, page: int,headers: dict, per_page: int):
+async def process_page(url: str, page: int,headers: dict, per_page: int,name_of_the_interval_directory: str):
     '''
     Async function that processes a page of data, cloning repositories using the `clone_repository` function.
 
@@ -121,9 +120,9 @@ async def process_page(url: str, page: int,headers: dict, per_page: int):
     data = await return_data_from_query(url,page,headers,per_page)
     for item in data["items"]:
         async with asyncio.TaskGroup() as tg:
-            tg.create_task(clone_repository(item["clone_url"],item["name"]))
+            tg.create_task(clone_repository(item["clone_url"],item["name"],name_of_the_interval_directory))
 
-async def get_users_and_their_repositories(url_for_scrapping_pages: str, intervals: tuple, token: str,headers: dict,per_page: int):
+async def get_users_and_their_repositories(intervals: tuple, token: str,headers: dict,per_page: int,name_of_the_interval_directory: str):
     '''
     Async function that iterates over specified intervals, retrieves user repositories, and clones them.
 
@@ -140,10 +139,10 @@ async def get_users_and_their_repositories(url_for_scrapping_pages: str, interva
     await asyncio.to_thread(os.chdir, os.getenv("PATH_TO_THE_DATA_DIRECTORY"))
     for i in range(0, len(intervals)):
         since, until = intervals[i]
-        formatted_url = await asyncio.to_thread(os.getenv, "URL")
+        formatted_url = await return_url()
         formatted_url = formatted_url.format(since, until)
         pages_on_query = await how_many_pages_need_to_parse(formatted_url,30)
-        tasks = [process_page(formatted_url, j,headers,per_page) for j in range(0,pages_on_query + 1)]
+        tasks = [process_page(formatted_url, j,headers,per_page,name_of_the_interval_directory) for j in range(0,pages_on_query + 1)]
         await asyncio.gather(*tasks)
 
 async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers: dict, token: str,first_year: int, second_year: int):
@@ -164,12 +163,12 @@ async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
     '''
     if first_year > datetime.datetime.now().year or second_year > datetime.datetime.now().year:
-        raise Exception(f"First year and second year cannot be greater than {datetime.datetime.now().year}") 
+        raise Exception(f"First year or second year cannot be greater than {datetime.datetime.now().year}") 
     first_date = datetime.datetime(first_year,1,1).strftime("%Y-%m-%d")
     second_date = datetime.datetime(second_year,1,1).strftime("%Y-%m-%d")
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_date,second_date)
     intervals = await generate_intervals(first_year,second_year)
-    await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30)
 
 async def сloning_is_performed_at_specified_intervals(url_for_scrapping_pages: str,headers: dict,token: str, first_interval: str, second_interval: str):
     '''
@@ -187,9 +186,9 @@ async def сloning_is_performed_at_specified_intervals(url_for_scrapping_pages: 
     '''
     intervals = await from_one_interval_to_second_scrapping(first_interval,second_interval,True)
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_interval,second_interval)
-    await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30)
 
-async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages: str,headers: dict, token: str, first_interval: str, second_interval: str):
+async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages: str,headers: dict, token: str, first_interval: str, second_interval: str,name_of_the_interval_directory: str):
     '''
     Async function that performs cloning based on fixed year and month intervals.
 
@@ -205,7 +204,7 @@ async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrap
     '''
     intervals = await year_month_fixed_iterate_day_by_day(first_interval,second_interval,True)
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_interval,second_interval)
-    await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30,name_of_the_interval_directory)
 
 async def formed_datetime_intervals_for_last_scrapping():
     '''
@@ -280,9 +279,9 @@ async def determine_interval_type(difference):
     elif difference < 31:
         return IntervalType.WEAKS
     elif difference <= 365:
-        return IntervalType.MONTHS
+        return IntervalType.MONTH
     else:
-        return IntervalType.YEARS
+        return IntervalType.YEAR
 
 async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, token: str, rewrite_last_date_scrapping: bool):
     '''
@@ -320,7 +319,7 @@ async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, toke
             intervals = await year_month_fixed_iterate_day_by_day(first_interval,second_interval)
         case _:
             pass
-    await get_users_and_their_repositories(url_for_scrapping_pages,intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30)
 
 async def most_popular_repositories(special_url_for_scrapping_pages):
     pass
@@ -328,17 +327,22 @@ async def most_popular_repositories(special_url_for_scrapping_pages):
 async def main():
     token = await return_token()
     url_for_scrapping_pages = await return_url()
-    print(url_for_scrapping_pages)
     headers = {"Authorization": f"Bearer {token}"}
     await create_data_directory()
-    choice = ParsingChoice.SINCE_LAST_SCRAPPING
+    choice = ParsingChoice.YEAR_AND_MONTH_FIXED
     match choice:
         case ParsingChoice.YEAR_BY_YEAR:
             await сloning_is_carried_out_by_year(url_for_scrapping_pages,headers,token,2015,2016)
         case ParsingChoice.FROM_ONE_INTERVAL_TO_SECOND:
             await сloning_is_performed_at_specified_intervals(url_for_scrapping_pages,headers,token,"2015-03-05","2015-04-07")
         case ParsingChoice.YEAR_AND_MONTH_FIXED:
-            await cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages,headers,token)
+            first_interval = "2015-03-01"
+            second_interval = "2015-03-05"
+            name_of_the_interval_directory = "-".join([first_interval, second_interval])
+            await create_directory_on_pc(name_of_the_interval_directory)
+            path = os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"),name_of_the_interval_directory)
+            await asyncio.to_thread(os.chdir,path)
+            await cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages,headers,token,first_interval,second_interval,name_of_the_interval_directory)
         case ParsingChoice.SINCE_LAST_SCRAPPING:
             await since_last_scrapping(url_for_scrapping_pages,headers,token,False)
         case ParsingChoice.MOST_POPULAR:

@@ -7,5 +7,5 @@ async def write_last_date_scrapping(datetime):
     try:
         set_key(".env", "LAST_DATE_SCRAPPING", datetime)
     except Exception as e:
-        print(f"Произошла ошибка: {e}")
+        print(f"An error has occurred: {e}")
     
