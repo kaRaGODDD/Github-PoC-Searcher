@@ -69,6 +69,7 @@ async def clone_repository(repository_url: str, repository_name: str,name_of_the
     Parameters:
         - repository_url (str): The URL of the repository to be cloned.
         - repository_name (str): The name of the repository.
+        - name_of_the_interval_directory (str) The name of interval directory.
 
     Raises:
         Exception: If an error occurs during the cloning process.
@@ -81,7 +82,8 @@ async def clone_repository(repository_url: str, repository_name: str,name_of_the
     try:
         exists = await asyncio.to_thread(os.path.exists, path_to_repository)
         if exists:
-            process = await asyncio.create_subprocess_exec("git","pull",repository_url)
+            await asyncio.to_thread(os.chdir,os.path.join(path_to_repository))
+            process = await asyncio.create_subprocess_exec("git","pull")
             await process.wait()
         else:
             process = await asyncio.create_subprocess_exec("git", "clone", "--depth", "1", repository_url, path_to_repository)
@@ -116,6 +118,7 @@ async def process_page(url: str, page: int,headers: dict, per_page: int,name_of_
         - page (int): The page number for pagination.
         - headers (dict): Headers to be included in the HTTP request.
         - per_page (int): Number of items per page.
+        - name_of_the_interval_directory (str) The name of interval directory.
     '''
     data = await return_data_from_query(url,page,headers,per_page)
     for item in data["items"]:
@@ -132,6 +135,7 @@ async def get_users_and_their_repositories(intervals: tuple, token: str,headers:
         - token (str): Authorization token for API requests.
         - headers (dict): Headers to be included in the HTTP request.
         - per_page (int): Number of items per page.
+        - name_of_the_interval_directory (str) The name of interval directory.
 
     Note:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
@@ -145,7 +149,7 @@ async def get_users_and_their_repositories(intervals: tuple, token: str,headers:
         tasks = [process_page(formatted_url, j,headers,per_page,name_of_the_interval_directory) for j in range(0,pages_on_query + 1)]
         await asyncio.gather(*tasks)
 
-async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers: dict, token: str,first_year: int, second_year: int):
+async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers: dict, token: str,first_year: int, second_year: int,name_of_the_interval_directory: str):
     '''
     Async function that performs cloning based on specified year intervals.
 
@@ -155,6 +159,7 @@ async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers:
         - token (str): Authorization token for API requests.
         - first_year (int): The starting year for the interval.
         - second_year (int): The ending year for the interval.
+        - name_of_the_interval_directory (str) The name of interval directory.
 
     Raises:
         Exception: If either the first or second year is greater than 2024.
@@ -168,9 +173,9 @@ async def сloning_is_carried_out_by_year(url_for_scrapping_pages: str, headers:
     second_date = datetime.datetime(second_year,1,1).strftime("%Y-%m-%d")
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_date,second_date)
     intervals = await generate_intervals(first_year,second_year)
-    await get_users_and_their_repositories(intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30,name_of_the_interval_directory)
 
-async def сloning_is_performed_at_specified_intervals(url_for_scrapping_pages: str,headers: dict,token: str, first_interval: str, second_interval: str):
+async def сloning_is_performed_at_specified_intervals(url_for_scrapping_pages: str,headers: dict,token: str, first_interval: str, second_interval: str,name_of_the_interval_directory: str):
     '''
     Async function that performs cloning based on specified date intervals.
 
@@ -180,13 +185,14 @@ async def сloning_is_performed_at_specified_intervals(url_for_scrapping_pages: 
         - token (str): Authorization token for API requests.
         - first_interval (str): The starting date interval.
         - second_interval (str): The ending date interval.
+        - name_of_the_interval_directory (str) The name of interval directory.
 
     Note:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
     '''
     intervals = await from_one_interval_to_second_scrapping(first_interval,second_interval,True)
     url_for_scrapping_pages = url_for_scrapping_pages.format(first_interval,second_interval)
-    await get_users_and_their_repositories(intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30,name_of_the_interval_directory)
 
 async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages: str,headers: dict, token: str, first_interval: str, second_interval: str,name_of_the_interval_directory: str):
     '''
@@ -198,6 +204,7 @@ async def cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrap
         - token (str): Authorization token for API requests.
         - first_interval (str): The starting date interval.
         - second_interval (str): The ending date interval.
+        - name_of_the_interval_directory (str) The name of interval directory.
 
     Note:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
@@ -247,20 +254,21 @@ async def calculate_difference_between_two_dates(first_date: str, second_date: s
     second_datetime = await return_datetime_object_in_right_view(second_date,"%Y-%m-%dT%H:%M:%SZ")
     return abs((first_datetime - second_datetime).days)
 
-async def to_strftime_format(last_date_scrapping: str, date_now: str):
+async def to_strftime_format(last_date_scrapping: str, date_now: str,format: str = "%Y-%m-%dT%H:%M:%SZ"):
     '''
-    Async function that converts ISO 8601 formatted datetime strings to "%Y-%m-%d" format.
+    Asynchronous function that converts ISO 8601 formatted datetime strings to custom format.
 
     Parameters:
-        - last_date_scrapping (str): The ISO 8601 formatted datetime string for the last scrapping date.
-        - date_now (str): The ISO 8601 formatted datetime string for the current date.
+        - last_date_scrapping (str): The ISO 8601 formatted datetime string representing the last scrapping date.
+        - date_now (str): The ISO 8601 formatted datetime string representing the current date.
+        - format (str): The format of the input datetime strings (default is "%Y-%m-%dT%H:%M:%SZ").
 
     Returns:
         tuple: A tuple containing two strings in "%Y-%m-%d" format representing the last scrapping date and the current date.
     '''
-    first_interval = await return_datetime_object_in_right_view(last_date_scrapping,"%Y-%m-%dT%H:%M:%SZ")
+    first_interval = await return_datetime_object_in_right_view(last_date_scrapping,format)
     first_interval = first_interval.strftime("%Y-%m-%d")
-    second_interval = await return_datetime_object_in_right_view(date_now,"%Y-%m-%dT%H:%M:%SZ")
+    second_interval = await return_datetime_object_in_right_view(date_now,format)
     second_interval = second_interval.strftime("%Y-%m-%d")
     return (first_interval,second_interval)
 
@@ -283,7 +291,7 @@ async def determine_interval_type(difference):
     else:
         return IntervalType.YEAR
 
-async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, token: str, rewrite_last_date_scrapping: bool):
+async def since_last_scrapping(url_for_scrapping_pages: str,headers: dict, token: str, rewrite_last_date_scrapping: bool,name_of_the_interval_directory: str):
     '''
     Async function that performs scrapping since the last recorded scrapping date.
 
@@ -292,6 +300,7 @@ async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, toke
         - headers (dict): Headers to be included in the HTTP request.
         - token (str): Authorization token for API requests.
         - rewrite_last_date_scrapping (bool): Flag indicating whether to rewrite the last scrapping date.
+        - name_of_the_interval_directory (str) The name of interval directory.
 
     Note:
         This function assumes that the environment variable "PATH_TO_THE_DATA_DIRECTORY" is set.
@@ -319,7 +328,26 @@ async def since_last_scrapping(url_for_scrapping_pages: str, headers: dict, toke
             intervals = await year_month_fixed_iterate_day_by_day(first_interval,second_interval)
         case _:
             pass
-    await get_users_and_their_repositories(intervals,token,headers,30)
+    await get_users_and_their_repositories(intervals,token,headers,30,name_of_the_interval_directory)
+
+async def formed_interval_and_switch_directory(first_interval: str, second_interval: str):
+        '''
+        Asynchronous function that processes time intervals and switches the current working directory.
+
+        Parameters:
+            - directory_path (str): The path of the directory to switch to.
+            - last_date_scrapping (str): The ISO 8601 formatted datetime string representing the last scrapping date.
+            - date_now (str): The ISO 8601 formatted datetime string representing the current date.
+            - format (str): The format of the input datetime strings (default is "%Y-%m-%dT%H:%M:%SZ").
+
+        Returns:
+        tuple: A tuple containing two strings in "%Y-%m-%d" format representing the last scrapping date and the current date.
+        '''
+        name_of_the_interval_directory = "-".join([first_interval, second_interval])
+        await create_directory_on_pc(name_of_the_interval_directory)
+        path = os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"),name_of_the_interval_directory)
+        await asyncio.to_thread(os.chdir,path)
+        return name_of_the_interval_directory
 
 async def most_popular_repositories(special_url_for_scrapping_pages):
     pass
@@ -329,22 +357,29 @@ async def main():
     url_for_scrapping_pages = await return_url()
     headers = {"Authorization": f"Bearer {token}"}
     await create_data_directory()
-    choice = ParsingChoice.YEAR_AND_MONTH_FIXED
+    choice = ParsingChoice.SINCE_LAST_SCRAPPING
     match choice:
         case ParsingChoice.YEAR_BY_YEAR:
-            await сloning_is_carried_out_by_year(url_for_scrapping_pages,headers,token,2015,2016)
+            first_interval = "2015-01-01"
+            second_interval = "2016-01-01"
+            name_of_the_interval_directory = await formed_interval_and_switch_directory(first_interval,second_interval)
+            await сloning_is_carried_out_by_year(url_for_scrapping_pages,headers,token,2015,2016,name_of_the_interval_directory)
         case ParsingChoice.FROM_ONE_INTERVAL_TO_SECOND:
-            await сloning_is_performed_at_specified_intervals(url_for_scrapping_pages,headers,token,"2015-03-05","2015-04-07")
+            first_interval = "2015-03-05"
+            second_interval = "2015-04-07"
+            name_of_the_interval_directory = await formed_interval_and_switch_directory(first_interval,second_interval)
+            await сloning_is_performed_at_specified_intervals(url_for_scrapping_pages,headers,token,first_interval,second_interval,name_of_the_interval_directory)
         case ParsingChoice.YEAR_AND_MONTH_FIXED:
             first_interval = "2015-03-01"
             second_interval = "2015-03-05"
-            name_of_the_interval_directory = "-".join([first_interval, second_interval])
-            await create_directory_on_pc(name_of_the_interval_directory)
-            path = os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"),name_of_the_interval_directory)
-            await asyncio.to_thread(os.chdir,path)
+            name_of_the_interval_directory = await formed_interval_and_switch_directory(first_interval,second_interval)
             await cloning_is_performed_according_to_a_fixed_year_and_month(url_for_scrapping_pages,headers,token,first_interval,second_interval,name_of_the_interval_directory)
         case ParsingChoice.SINCE_LAST_SCRAPPING:
-            await since_last_scrapping(url_for_scrapping_pages,headers,token,False)
+            first_interval = os.getenv("LAST_DATE_SCRAPPING")
+            second_interval = datetime.datetime.now().strftime("%Y-%m-%d%H:%M:%S")
+            first_interval_strftime_format,second_interval_strftime_format = await to_strftime_format(first_interval,second_interval,"%Y-%m-%d%H:%M:%S")
+            name_of_the_interval_directory = await formed_interval_and_switch_directory(first_interval_strftime_format,second_interval_strftime_format)
+            await since_last_scrapping(url_for_scrapping_pages,headers,token,False,name_of_the_interval_directory)
         case ParsingChoice.MOST_POPULAR:
             pass
         case _:
