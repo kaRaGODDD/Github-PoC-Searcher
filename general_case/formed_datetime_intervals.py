@@ -96,8 +96,7 @@ async def year_month_fixed_iterate_day_by_day(first_interval: str,second_interva
             raise Exception("First date should be earlier than the second one")
 
     except ValueError:
-        print("Invalid date format. Please use 'YYYY-MM-DD'")
-        return None
+        raise Exception("Cannot to convert datime object")
     
     intervals = []
     current_date = first_datetime_object
