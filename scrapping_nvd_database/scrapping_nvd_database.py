@@ -5,6 +5,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from pydantic import ValidationError
+from file_manager.distribution_of_objects import distribute_cve_object
 from datetime_manager.create_datetime_intervals import create_intervals
 from constants_and_other_stuff.returning_values import return_nvd_api_url, return_nvd_api_key
 from constants_and_other_stuff.pydantic_models import CveExploit
@@ -12,6 +13,7 @@ from constants_and_other_stuff.structs import StringInterval
 
 load_dotenv()
 
+#TODO add logger or loguru dont remember how to name that library
 class NvdDataBaseScrapper:
     def __init__(self, string_interval: StringInterval):
         self.string_interval = string_interval
@@ -37,7 +39,7 @@ class NvdDataBaseScrapper:
                 cve_exploit = CveExploit(**cve_info['cve'])
             except ValidationError as e:
                 print("Exception",e.json())
-            print(cve_exploit.id)
+            await distribute_cve_object(cve_exploit)
 
     async def _return_data_from_request(self, url: str, string_interval: StringInterval, headers: dict[str, str]):
         try:
@@ -56,9 +58,3 @@ class NvdDataBaseScrapper:
         except Exception as e:
             print(f"An unexpected error occurred: {e}", url)
 
-
-async def main():
-    ss = StringInterval("2015-03-01", "2016-04-06")
-    asdf = NvdDataBaseScrapper(ss)
-    await asdf.start_scrapping()
-asyncio.run(main())
