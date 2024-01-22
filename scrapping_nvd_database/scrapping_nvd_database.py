@@ -6,7 +6,7 @@ from typing import List
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from datetime_manager.create_datetime_intervals import create_intervals
-from constants_and_other_stuff.returning_values import return_nvd_api_url
+from constants_and_other_stuff.returning_values import return_nvd_api_url, return_nvd_api_key
 from constants_and_other_stuff.pydantic_models import CveExploit
 from constants_and_other_stuff.structs import StringInterval
 
@@ -19,14 +19,16 @@ class NvdDataBaseScrapper:
     async def start_scrapping(self):
         await self._handle_intervals()
 
-    async def _handle_api_request(self,url: str, string_interval: StringInterval):
-        data = await self._return_data_from_request(url,string_interval)
+    async def _handle_api_request(self,url: str, string_interval: StringInterval,headers: dict[str,str]):
+        data = await self._return_data_from_request(url,string_interval,headers)
         await self._handle_data(data["vulnerabilities"])
 
     async def _handle_intervals(self):
         url = await return_nvd_api_url()
+        nvd_api_key = await return_nvd_api_key()
+        headers = { 'apiKey': nvd_api_key} 
         intervals = await create_intervals(self.string_interval)
-        tasks = [self._handle_api_request(url,interval) for interval in intervals]
+        tasks = [self._handle_api_request(url,interval,headers) for interval in intervals]
         await asyncio.gather(*tasks)
 
     async def _handle_data(self,data: List[dict]):
@@ -37,14 +39,26 @@ class NvdDataBaseScrapper:
                 print("Exception",e.json())
             print(cve_exploit.id)
 
-    async def _return_data_from_request(self, url: str, string_interval: StringInterval):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url.format(string_interval.first_interval, string_interval.second_interval)) as response:
-                data = await response.json()
-        return data
+    async def _return_data_from_request(self, url: str, string_interval: StringInterval, headers: dict[str, str]):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url.format(string_interval.first_interval, string_interval.second_interval), headers=headers) as response:
+                    if response.status != 200:
+                        response.raise_for_status()
+                    data = await response.json()
+            return data
+        except aiohttp.ClientResponseError as e:
+            print(f"Error fetching data: {e}", url)
+        except aiohttp.ClientError as e:
+            print(f"Client error: {e}", url)
+        except aiohttp.ContentTypeError as e:
+            print(f"Content type error: {e}", url)
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}", url)
+
 
 async def main():
-    ss = StringInterval("2015-03-01", "2015-03-06")
+    ss = StringInterval("2015-03-01", "2016-04-06")
     asdf = NvdDataBaseScrapper(ss)
     await asdf.start_scrapping()
 asyncio.run(main())
