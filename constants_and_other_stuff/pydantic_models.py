@@ -1,10 +1,10 @@
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
 class _Source(BaseModel):
     url: str
     source: str
-    tags: List[str]
+    tags: Optional[List[str]] = Field(None, alias='tags')
 
 class _CvssData(BaseModel):
     accessVector: str
@@ -22,7 +22,7 @@ class _Description(BaseModel):
     value: str
 
 class _Metrics(BaseModel):
-    cvssMetricV2: List[_Score]
+    cvssMetricV2: Optional[List[_Score]] = []
 
 class CveExploit(BaseModel):
     id: str
