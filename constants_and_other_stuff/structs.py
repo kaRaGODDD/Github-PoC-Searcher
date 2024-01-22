@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 class StringInterval(NamedTuple):
     first_interval: str 
@@ -19,6 +19,8 @@ class CvePattern(NamedTuple):
     access_vector: str
     access_complexity: str
     base_severity: str
+    vulnerability_status: str
     exploitability_score: int
     impact_score: int
     base_score: int
+    references: List[str]
