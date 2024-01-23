@@ -11,6 +11,12 @@ class DatetimeInterval(NamedTuple):
     second_interval: datetime
 
 
+class ComponentsOfCveID(NamedTuple):
+    cve: str
+    cve_year: int
+    cve_id: int
+
+
 class CvePattern(NamedTuple):
     cve_id: str
     published_date: str
