@@ -1,21 +1,34 @@
 pattern_of_md_file = '''
-# ___[{}]({})___
+# [{}]({})
 
 ## Description
 
 - `{}`
 
-## Cvss data
+## Cvss Data
 
-- `access vector`: {}
-- `base score`: {}
-- `exploitability score`: {}
-- `impact score`: {}
-- `base sevirity`: {}
+- **Access Vector**:
+  - {}
+- **Base Score**:
+  - {}
 
-## Other information
+## Scores
 
-- `publish date`: {}
-- `vulnerability status`: {}
-- `references`: {}
+- **Exploitability Score**:
+  - {}
+- **Impact Score**:
+  - {}
+- **Base Severity**:
+  - {}
+
+## Other Information
+
+- **Publish Date**:
+  - {}
+- **Vulnerability Status**:
+  - {}
+
+## References
+
+{}
 '''
