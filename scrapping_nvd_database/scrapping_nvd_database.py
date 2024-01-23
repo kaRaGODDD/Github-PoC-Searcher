@@ -5,7 +5,7 @@ import os
 from typing import List
 from dotenv import load_dotenv
 from pydantic import ValidationError
-from file_manager.distribution_of_objects import distribute_cve_object
+from file_manager.distribution_of_objects import process_and_distribute_cve
 from datetime_manager.create_datetime_intervals import create_intervals
 from constants_and_other_stuff.returning_values import return_nvd_api_url, return_nvd_api_key
 from constants_and_other_stuff.pydantic_models import CveExploit
@@ -39,7 +39,7 @@ class NvdDataBaseScrapper:
                 cve_exploit = CveExploit(**cve_info['cve'])
             except ValidationError as e:
                 print("Exception",e.json())
-            await distribute_cve_object(cve_exploit)
+            await process_and_distribute_cve(cve_exploit)
 
     async def _return_data_from_request(self, url: str, string_interval: StringInterval, headers: dict[str, str]):
         try:
