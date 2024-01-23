@@ -1,5 +1,6 @@
 import aiofiles
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -11,7 +12,8 @@ load_dotenv()
 async def write_file_by_pattern(ready_cve_object: CveExploit, path: str):
     where_to_write = os.path.join(path, f"{ready_cve_object.id}.md")
     references_formatted = "\n".join([f'- **{ref.source}**: {ref.url}' for ref in ready_cve_object.references]) if ready_cve_object.references else ""
-    
+    publish_date_formatted = datetime.fromisoformat(ready_cve_object.published).strftime('%Y-%m-%d %H:%M:%S')
+
     async with aiofiles.open(where_to_write, 'w') as f:
         await f.write(pattern_of_md_file.format(
             ready_cve_object.id,
@@ -22,7 +24,7 @@ async def write_file_by_pattern(ready_cve_object: CveExploit, path: str):
             ready_cve_object.metrics.cvssMetricV2[0].exploitabilityScore if ready_cve_object.metrics.cvssMetricV2 else "",
             ready_cve_object.metrics.cvssMetricV2[0].impactScore if ready_cve_object.metrics.cvssMetricV2 else "",
             ready_cve_object.metrics.cvssMetricV2[0].baseSeverity if ready_cve_object.metrics.cvssMetricV2 else "",
-            ready_cve_object.published,
+            publish_date_formatted,
             ready_cve_object.vulnStatus,
             references_formatted
         ))
