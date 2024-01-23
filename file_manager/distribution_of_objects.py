@@ -1,7 +1,6 @@
 import asyncio
 import aiofiles
 import os
-import re
 
 import math
 from dotenv import load_dotenv
@@ -26,11 +25,11 @@ async def _create_id_based_directory(cve_object: ComponentsOfCveID) -> str:
     determine_folder_name_by_formula = await _generate_folder_name(cve_object)
     full_path = os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"), cve_object.cve_year)
     await create_directory(determine_folder_name_by_formula, full_path)
-    return full_path
+    return os.path.join(full_path,determine_folder_name_by_formula)
 
 async def _generate_folder_name(cve_obj: ComponentsOfCveID):
-    s = str((int(cve_obj.cve_id) / 1000)).split(".")
-    folder_name = s[0] + ''.join(['x' for _ in range(len(s[1]))])
+    rational_number = str((int(cve_obj.cve_id) / 1000)).split(".")
+    folder_name = rational_number[0] + ''.join(['x' for _ in range(max(len(rational_number[1]),3))])
     return folder_name
 
 async def _extract_cve_components(cve_id: str) -> ComponentsOfCveID:
