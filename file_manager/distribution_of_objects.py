@@ -1,3 +1,4 @@
+import asyncio
 import aiofiles
 import os
 import re
@@ -21,7 +22,5 @@ async def _parse_cve_object_by_id(cve_object: CveExploit):
 
 async def _determine_folder_name(cve_obj_id: str):
     s = str(int(cve_obj_id.split("-")[2]) / 1000).split(".")
-    folder_name = s[0]
-    for i in range (0,len(s[1])):
-        folder_name += "x"
+    folder_name = s[0] + ''.join(['x' for _ in range(len(s[1]))])
     return folder_name
