@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from github import Github
+from git import Repo
 from dotenv import load_dotenv
 from constants_and_other_stuff.returning_values import return_github_token
 
@@ -27,6 +28,7 @@ class GithubManager(ABC):
         self._github_token = github_token
         self._path_to_local_repository = path_to_local_repository_on_pc
         self._user = self._get_user()
+        self._repo = Repo.init(path_to_local_repository_on_pc)
 
     def _get_user(self):
         """
@@ -65,6 +67,17 @@ class GithubManager(ABC):
             commit_message (str): Commit message.
         """
         ...
+    @abstractmethod
+    async def add_in_index(all: bool = True):
+        """
+        Abstract method to add changes to the index in preparation for a commit.
+
+        Args:
+            all (bool, optional): If True, add all changes to the index. 
+                                If False, only add modified and new files. Default is True.
+        """
+        ...
+
 
     @abstractmethod
     async def update_database(self):
