@@ -17,36 +17,13 @@ class GithubManager(ABC):
         _user (github.AuthenticatedUser.AuthenticatedUser): GitHub user object.
     """
 
-    def __init__(self, github_token: str, path_to_local_repository_on_pc: str):
+    def __init__(self):
         """
         Initialize the GitHub manager.
-
-        Args:
-            github_token (str): GitHub token.
-            path_to_local_repository_on_pc (str): Path to the local repository on the computer.
         """
-        self._github_token = github_token
-        self._path_to_local_repository = path_to_local_repository_on_pc
-        self._user = self._get_user()
-        self._repo = Repo.init(path_to_local_repository_on_pc)
-
-    def _get_user(self):
-        """
-        Get the GitHub user object.
-
-        Returns:
-            github.AuthenticatedUser.AuthenticatedUser: GitHub user object.
-        """
-        return Github(self._github_token).get_user()
-
-    def _get_local_repository_path(self):
-        """
-        Get the path to the local repository.
-
-        Returns:
-            str: Path to the local repository.
-        """
-        return self._path_to_local_repository
+        self._github_token = os.getenv("GITHUB_TOKEN")
+        self._path_to_local_repository = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
+        self._user = Github(self._github_token).get_user()
 
     @abstractmethod
     async def create_repository(self, name_of_the_repository: str):
@@ -67,17 +44,13 @@ class GithubManager(ABC):
             commit_message (str): Commit message.
         """
         ...
+
     @abstractmethod
-    async def add_in_index(all: bool = True):
+    async def add_in_index(self):
         """
         Abstract method to add changes to the index in preparation for a commit.
-
-        Args:
-            all (bool, optional): If True, add all changes to the index. 
-                                If False, only add modified and new files. Default is True.
         """
         ...
-
 
     @abstractmethod
     async def update_database(self):
