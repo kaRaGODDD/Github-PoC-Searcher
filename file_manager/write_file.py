@@ -28,3 +28,5 @@ async def write_file_by_pattern(ready_cve_object: CveExploit, path: str):
             ready_cve_object.vulnStatus,
             references_formatted
         ))
+    #TODO: replace that to logging/loguru
+    print(f"That object {ready_cve_object.id} was written")
