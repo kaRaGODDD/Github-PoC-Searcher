@@ -21,7 +21,7 @@ class NvdDataBaseScrapper:
     def __init__(self, string_interval: StringInterval = StringInterval("2013-01-01", "2014-01-01")):
         self.string_interval = string_interval
 
-    async def start_scrapping(self, rewrite_last_date_scrapping: bool = False):
+    async def start_scrapping(self, rewrite_last_date_scrapping: bool=False):
         try:
             if rewrite_last_date_scrapping:
                 await write_last_date_scrapping()
@@ -29,14 +29,14 @@ class NvdDataBaseScrapper:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    async def update(self):
+    async def update(self,rewrite_last_date_scrapping: bool=False):
         try:
             last_date_scrapping = os.getenv("LAST_DATE_SCRAPPING")
             current_date_scrapping = datetime.datetime.now().strftime("%Y-%m-%d")
             if last_date_scrapping is None:
                 last_date_scrapping = datetime.datetime.now().strftime("%Y-%m-%d")
             await self.set_interval(StringInterval(last_date_scrapping,current_date_scrapping))
-            await self.start_scrapping(rewrite_last_date_scrapping=True)
+            await self.start_scrapping(rewrite_last_date_scrapping)
         except Exception as e:
             print(f"An unexpected error occurred method update: {e}")
 
@@ -82,11 +82,3 @@ class NvdDataBaseScrapper:
             print(f"Client error: {e}", url)
         except Exception as e:
             print(f"An unexpected error occurred: {e}", url)
-
-
-async def main():
-    a = NvdDataBaseScrapper()
-    await a.update()
-
-
-asyncio.run(main())
