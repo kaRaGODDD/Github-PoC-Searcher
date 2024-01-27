@@ -1,5 +1,14 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
+import json
+
+
+class Item(BaseModel):
+    html_url: str
+
+class HtmlUrlFromResponse(BaseModel):
+    total_count: int
+    items: Optional[List[Item]] = Field(None,alias='items')
 
 class _Source(BaseModel):
     url: str
@@ -31,3 +40,4 @@ class CveExploit(BaseModel):
     descriptions: List[_Description]
     metrics: _Metrics
     references: List[_Source]
+    
