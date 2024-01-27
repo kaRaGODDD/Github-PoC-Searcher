@@ -32,3 +32,15 @@ pattern_of_md_file = '''
 
 {}
 '''
+
+pattern_of_md_poc_file = '''
+# {}
+
+## Description
+
+{}
+
+## References
+
+{}
+'''
