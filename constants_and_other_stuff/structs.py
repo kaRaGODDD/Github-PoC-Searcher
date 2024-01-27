@@ -17,16 +17,17 @@ class ComponentsOfCveID(NamedTuple):
     cve_id: int
 
 
-class CvePattern(NamedTuple):
-    cve_id: str
-    published_date: str
+class CveModelForPoC(NamedTuple):
     description: str
-    url: str
-    access_vector: str
-    access_complexity: str
-    base_severity: str
-    vulnerability_status: str
-    exploitability_score: int
-    impact_score: int
-    base_score: int
-    references: List[str]
+    github_urls: List[str]
+
+
+class ProcessCVEID(NamedTuple):
+    need: bool
+    github_urls: List[str]
+
+
+class CvePoc(NamedTuple):
+    cve_id: str
+    description: str
+    formatted_references: str
