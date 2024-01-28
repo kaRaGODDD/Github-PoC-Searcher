@@ -63,7 +63,6 @@ class PoCSearcher:
                     response.raise_for_status()
                     await asyncio.sleep(2)
                     data = await response.json()
-                    # Извлекаем заголовки для получения информации о лимите запросов
                     remaining_requests = response.headers.get('X-RateLimit-Remaining')
                     total_requests = response.headers.get('X-RateLimit-Limit')
                     print(f"Requests remaining: {remaining_requests}")
