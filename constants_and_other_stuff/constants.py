@@ -44,3 +44,23 @@ pattern_of_md_poc_file = '''
 
 {}
 '''
+
+GRAPHQL_QUERY = '''
+query {{
+  rateLimit {{
+      cost
+      remaining
+      resetAt
+  }}
+  search(query: "{}", type: REPOSITORY, first: 100) {{
+    repositoryCount
+    edges {{
+      node {{
+        ... on Repository {{
+          url
+        }}
+      }}
+    }}
+  }}
+}}
+'''
