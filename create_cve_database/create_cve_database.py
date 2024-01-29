@@ -4,13 +4,19 @@ import subprocess
 
 from datetime import datetime
 from dotenv import load_dotenv
-from git import Repo
+from github import Github
 from github_manager.personal_github_manager import GithubManager
 from scrapping_nvd_database.scrapping_nvd_database import NvdDataBaseScrapper
 
 load_dotenv()
 
 class CreateCveDatabase(GithubManager):
+
+    def __init__(self):
+        self._path_to_local_repository = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
+        self._github_token = os.getenv("GITHUB_TOKEN")
+        self._user = Github(self._github_token).get_user()
+
     def set_repository_name(self, name_of_the_repository: str):
         """Set the name of the repository."""
         self._name_of_the_repository = name_of_the_repository
@@ -68,3 +74,10 @@ class CreateCveDatabase(GithubManager):
         await self.add_in_index() 
         await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         await self.push_changes_to_server()
+
+#TODO сделать временные интервалы гибкими, а то так неудобно
+async def main():
+    a = CreateCveDatabase()
+    await a.update_database()
+
+asyncio.run(main())
