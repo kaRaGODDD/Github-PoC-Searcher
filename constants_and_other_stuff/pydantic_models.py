@@ -3,12 +3,12 @@ from typing import List, Optional
 import json
 
 
-class Item(BaseModel):
+class _Item(BaseModel):
     html_url: str
 
 class HtmlUrlFromResponse(BaseModel):
     total_count: int
-    items: Optional[List[Item]] = Field(None,alias='items')
+    items: Optional[List[_Item]] = Field(None,alias='items')
 
 class _Source(BaseModel):
     url: str
@@ -41,3 +41,18 @@ class CveExploit(BaseModel):
     metrics: _Metrics
     references: List[_Source]
     
+class _RepositoryQL(BaseModel):
+    url: str
+
+class _EdgeQL(BaseModel):
+    node: _RepositoryQL
+
+class _SearchQL(BaseModel):
+    repositoryCount: int
+    edges: List[_EdgeQL]
+
+class _DataQL(BaseModel):
+    search: _SearchQL
+
+class GraphQLAnswerModel(BaseModel):
+    data: _DataQL
