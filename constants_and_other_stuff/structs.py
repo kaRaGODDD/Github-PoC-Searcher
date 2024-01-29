@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Union
+from constants_and_other_stuff.pydantic_models import GraphQLAnswerModel
 
 class StringInterval(NamedTuple):
     first_interval: str 
@@ -19,7 +20,7 @@ class ComponentsOfCveID(NamedTuple):
 
 class CveModelForPoC(NamedTuple):
     description: str
-    github_urls: List[str]
+    github_urls: Union[List[str], GraphQLAnswerModel]
 
 
 class ProcessCVEID(NamedTuple):
