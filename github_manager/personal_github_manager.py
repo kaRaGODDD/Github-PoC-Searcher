@@ -16,15 +16,6 @@ class GithubManager(ABC):
         _path_to_local_repository (str): Path to the local repository on the computer.
         _user (github.AuthenticatedUser.AuthenticatedUser): GitHub user object.
     """
-
-    def __init__(self):
-        """
-        Initialize the GitHub manager.
-        """
-        self._github_token = os.getenv("GITHUB_TOKEN")
-        self._path_to_local_repository = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
-        self._user = Github(self._github_token).get_user()
-
     @abstractmethod
     async def create_repository(self, name_of_the_repository: str):
         """
