@@ -5,7 +5,7 @@ import os
 
 from dotenv import load_dotenv
 from pydantic import ValidationError
-from typing import List
+from typing import List, Optional
 
 from file_manager.distribution_of_objects import process_and_distribute_cve
 from file_manager.write_last_scrapping_date import write_last_date_scrapping
@@ -13,13 +13,16 @@ from datetime_manager.create_datetime_intervals import create_intervals
 from constants_and_other_stuff.returning_values import return_nvd_api_url, return_nvd_api_key
 from constants_and_other_stuff.pydantic_models import CveExploit
 from constants_and_other_stuff.structs import StringInterval
+from constants_and_other_stuff.enums import FileSaving
 
 load_dotenv()
 
 
 class NvdDataBaseScrapper:
-    def __init__(self, string_interval: StringInterval = StringInterval("2013-01-01", "2014-01-01")):
+    def __init__(self, string_interval: StringInterval = StringInterval("2013-01-01", "2014-01-01"), 
+                 file_saving: FileSaving = FileSaving.MD):
         self.string_interval = string_interval
+        self._file_saving = file_saving
 
     async def start_scrapping(self, rewrite_last_date_scrapping: bool=False):
         try:
@@ -46,7 +49,11 @@ class NvdDataBaseScrapper:
     async def _handle_api_request(self, url: str, string_interval: StringInterval, headers: dict[str, str]):
         try:
             data = await self._return_data_from_request(url, string_interval, headers)
-            await self._handle_data(data.get("vulnerabilities", {}))
+            match self._file_saving:
+                case FileSaving.MD:
+                    await self._handle_data(data.get("vulnerabilities", {}))
+                case FileSaving.JSON:
+                    await self._handle_data(data.get("vulnerabilities", {}),data)
         except Exception as e:
             print(f"An unexpected error occurred method handle_api request: {e}", url)
 
@@ -61,13 +68,17 @@ class NvdDataBaseScrapper:
         except Exception as e:
             print(f"An unexpected error occurred handle intervals: {e}")
 
-    async def _handle_data(self, data: List[dict]):
+    async def _handle_data(self, data: List[dict], json_answer: Optional[dict]={}):
         for cve_info in data:
             try:
                 cve_exploit = CveExploit(**cve_info.get('cve', {}))
             except ValidationError as e:
                 print("Exception", e.json())
-            await process_and_distribute_cve(cve_exploit)
+            match self._file_saving:
+                case FileSaving.MD:
+                    await process_and_distribute_cve(cve_exploit,self._file_saving)
+                case FileSaving.JSON:
+                    await process_and_distribute_cve(cve_exploit,self._file_saving,json_answer=cve_info)
 
     async def _return_data_from_request(self, url: str, string_interval: StringInterval, headers: dict[str, str]) -> dict:
         try:
@@ -82,3 +93,9 @@ class NvdDataBaseScrapper:
             print(f"Client error: {e}", url)
         except Exception as e:
             print(f"An unexpected error occurred: {e}", url)
+
+async def main():
+    a = NvdDataBaseScrapper(StringInterval("2019-01-01","2021-01-01"),file_saving=FileSaving.JSON)
+    await a.start_scrapping()
+
+asyncio.run(main())
