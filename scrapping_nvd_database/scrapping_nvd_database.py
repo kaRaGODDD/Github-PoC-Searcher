@@ -45,6 +45,9 @@ class NvdDataBaseScrapper:
 
     async def set_interval(self, new_string_interval: StringInterval):
         self.string_interval = new_string_interval
+    
+    async def set_file_saving_status(self,file_saving: FileSaving):
+        self._file_saving = file_saving
 
     async def _handle_api_request(self, url: str, string_interval: StringInterval, headers: dict[str, str]):
         try:
@@ -95,7 +98,7 @@ class NvdDataBaseScrapper:
             print(f"An unexpected error occurred: {e}", url)
 
 async def main():
-    a = NvdDataBaseScrapper(StringInterval("2019-01-01","2021-01-01"),file_saving=FileSaving.JSON)
+    a = NvdDataBaseScrapper(StringInterval("2023-01-01","2024-01-30"),file_saving=FileSaving.JSON)
     await a.start_scrapping()
 
 asyncio.run(main())
