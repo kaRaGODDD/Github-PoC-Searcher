@@ -8,3 +8,7 @@ class POCChoiceSearch(Enum):
 class FileSaving(Enum):
     JSON = auto()
     MD = auto()
+
+class TypeOfTheDirectory(Enum):
+    PROOF_OF_CONCEPT_DIRECTORY = auto()
+    CVE_DATABASE_DIRECTORY = auto()
