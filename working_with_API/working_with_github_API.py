@@ -1,7 +1,7 @@
 import aiohttp
 from math import ceil
 
-async def how_many_pages_by_query(url: str, per_search: int):
+async def how_many_pages_by_query(url: str, per_search: int) -> int:
     '''
     Async function that retrieves information from a given URL representing a search query
     and calculates the number of pages needed to parse all the repositories based on the specified items per search.
@@ -22,7 +22,7 @@ async def how_many_pages_by_query(url: str, per_search: int):
             count = data.get("total_count",0)
     return ceil(count / per_search)
 
-async def return_data_from_query(url: str, headers: dict, page: int = 0, per_page: int = 30):
+async def return_data_from_query(url: str, headers: dict, page: int = 0, per_page: int = 30) -> dict:
     '''
     Async function that retrieves data from a query URL with pagination parameters.
 
