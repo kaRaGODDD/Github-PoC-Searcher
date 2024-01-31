@@ -1,5 +1,6 @@
 import aiofiles
 import os
+import json
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -30,3 +31,13 @@ async def write_file_by_pattern(ready_cve_object: CveExploit, path: str):
         ))
     #TODO: replace that to logging/loguru
     print(f"That object {ready_cve_object.id} was written")
+
+async def write_file_by_json(ready_cve_object_id: str, json_answer: dict, path: str):
+    where_to_write = os.path.join(path, f"{ready_cve_object_id}.json")
+    
+    async with aiofiles.open(where_to_write, "w", encoding='utf-8') as f:
+        # Use json.dumps() to serialize the JSON object to a string
+        json_string = json.dumps(json_answer, indent=4)
+        
+        # Write the serialized JSON string to the file
+        await f.write(json_string)
