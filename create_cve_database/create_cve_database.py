@@ -68,7 +68,7 @@ class CreateCveDatabase(GithubManager):
             print(f"Error pushing changes to 'dev': {e}")
 
     async def update_database(self, rewrite_last_date: bool=True):
-        """Update the database."""
+        """Update the database. 5 Принцип Solid нарущен нужно instance передать в параметры метода ну и там наследоваться"""
         nvd_instance = NvdDataBaseScrapper()
         await nvd_instance.update(rewrite_last_date)
         await self.add_in_index() 
