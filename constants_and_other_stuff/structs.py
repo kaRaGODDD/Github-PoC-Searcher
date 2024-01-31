@@ -20,7 +20,7 @@ class ComponentsOfCveID(NamedTuple):
 
 class CveModelForPoC(NamedTuple):
     description: str
-    github_urls: Union[List[str], GraphQLAnswerModel]
+    github_urls: [List[str]]
 
 
 class ProcessCVEID(NamedTuple):
