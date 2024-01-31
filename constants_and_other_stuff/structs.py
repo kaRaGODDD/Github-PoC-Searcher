@@ -32,3 +32,7 @@ class CvePoc(NamedTuple):
     cve_id: str
     description: str
     formatted_references: str
+
+class NewPocObject:
+    description: str
+    github_url: str
