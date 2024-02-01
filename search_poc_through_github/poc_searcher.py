@@ -6,8 +6,8 @@ import re
 from aiohttp import ServerDisconnectedError
 from pydantic import ValidationError
 from datetime import datetime
-from typing import List
 from dotenv import load_dotenv
+from typing import List
 
 from datetime_manager.create_datetime_intervals import create_intervals
 from datetime_manager.return_last_date_and_current import return_last_current_intervals_for_poc_update
@@ -61,7 +61,7 @@ class PoCSearcher:
         await asyncio.gather(*tasks)
 
     async def _traverse_cve_database_consistently(self):
-        for root, dirs, files in (os.getenv("PATH_TO_THE_DATA_DIRECTORY")):
+        for root, dirs, files in os.walk(self._path_to_the_cve_database):
             if '.git' in dirs and "JSON_ANSWERS":
                 dirs.remove('.git')
                 dirs.remove('JSON_ANSWERS')
@@ -164,23 +164,24 @@ class PoCSearcher:
             print(f"An unexpected error occurred: {e}")
     
     async def _special_search_for_update(self,intervals: List[StringInterval]):
-       #for i in range(0,len(intervals)):
-        since, until = intervals[0].first_interval, intervals[0].second_interval
-        new_url = self._special_url_for_update.format(since,until)
-        pages_on_query = await how_many_pages_by_query(new_url,per_search=30)
-        await self._process_each_page(new_url, page=0)
-            #tasks = [self._process_each_page(new_url,page) for page in range(0, pages_on_query + 1)]
-            #await asyncio.gather(*tasks)
+        for i in range(0,len(intervals)):
+            since, until = intervals[i].first_interval, intervals[i].second_interval
+            new_url = self._special_url_for_update.format(since,until)
+            pages_on_query = await how_many_pages_by_query(new_url,per_search=30)
+            tasks = [self._process_each_page(new_url,page) for page in range(0, pages_on_query + 1)]
+            await asyncio.gather(*tasks)
 
     async def _process_each_page(self, new_url: str, page: int):
         data = await return_data_from_query(url=new_url,headers=self._headers,page=page)
         for item in data.get("items"):
             cve_id = await self._extract_cve_id(item.get("name"))
             if cve_id:
+                pattern_of_cve_object_in_file = None
+                pattern_of_poc_object_in_file = None
                 path_to_poc_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY)
                 if os.path.exists(path_to_poc_cve_object):
                     pattern_of_poc_object_in_file = await read_file_by_path(path_to_poc_cve_object)
-                    if pattern_of_cve_object_in_file is not None:
+                    if pattern_of_poc_object_in_file is not None:
                         await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, item.get("html_url"), path_to_poc_cve_object,
                                                             type_of_the_directory=TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY)
                     else:
@@ -237,6 +238,6 @@ class PoCSearcher:
 
 async def main():
     a = PoCSearcher()
-    await a.update()
+    await a.start_search()
 
 asyncio.run(main())
