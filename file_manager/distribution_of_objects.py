@@ -22,7 +22,7 @@ async def return_location_of_cve_object(string_cve_object: str, type_of_the_dire
         case TypeOfTheDirectory.CVE_DATABASE_DIRECTORY:
             path_determined_by_type_of_directory = await _get_directory_path_for_type(data_about_cve.cve_year, type_of_the_directory)
             path_to_cve_object = await _get_directory_path_for_cve_object(data_about_cve, path_determined_by_type_of_directory)
-    return os.path.join(path_to_cve_object,string_cve_object)
+    return os.path.join(path_to_cve_object,string_cve_object) + ".md"
             
     
 async def _get_directory_path_for_type(cve_year: int, type_of_the_directory: TypeOfTheDirectory) -> str:
@@ -34,7 +34,10 @@ async def _get_directory_path_for_type(cve_year: int, type_of_the_directory: Typ
 
 async def _get_directory_path_for_cve_object(cve_object:  ComponentsOfCveID, path_to_cve_object: str) -> str:
     determine_folder_name_by_formula = await _generate_folder_name(cve_object)
-    return os.path.join(path_to_cve_object, determine_folder_name_by_formula)
+    path = os.path.join(path_to_cve_object, determine_folder_name_by_formula)
+    if not os.path.exists(path):
+        await create_directory(determine_folder_name_by_formula, path_to_cve_object)
+    return path
 
 async def process_and_distribute_cve(cve_object: CveExploit,file_saving: FileSaving, json_answer: Optional[dict]={}):
     components_of_the_cve = await _extract_cve_components(cve_object.id)
