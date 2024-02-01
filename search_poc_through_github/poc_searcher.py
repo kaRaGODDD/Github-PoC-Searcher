@@ -33,11 +33,11 @@ class PoCSearcher:
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
         self._path_to_the_cve_database = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
-        self._url = os.getenv("GITHUB_API_URL")
+        self._url = "https://api.github.com/search/repositories?q={}"#os.getenv("GITHUB_API_URL")
         self._headers = {"Authorization": f"Bearer {self._github_token}"}
         self._search_choice = search_choice
         self._graphql_url = os.getenv("GITHUB_GRAPHQL_URL")
-        self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
+        self._special_url_for_update = "https://api.github.com/search/repositories?q=cve%20created:{}..{}"#os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search(self):
         while True:
@@ -180,32 +180,45 @@ class PoCSearcher:
                 path_to_poc_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY)
                 if os.path.exists(path_to_poc_cve_object):
                     pattern_of_poc_object_in_file = await read_file_by_path(path_to_poc_cve_object)
-                    await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, item.get("html_url"), path_to_poc_cve_object,
-                                                        TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY)
+                    if pattern_of_cve_object_in_file is not None:
+                        await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, item.get("html_url"), path_to_poc_cve_object,
+                                                            type_of_the_directory=TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY)
+                    else:
+                        print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
                 else:
                     path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=TypeOfTheDirectory.CVE_DATABASE_DIRECTORY)
                     pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object)
-                    await self._working_with_extract_data(cve_id, pattern_of_cve_object_in_file,item.get("html_url"), path_to_poc_cve_object,
-                                                        type_of_the_directory=TypeOfTheDirectory.CVE_DATABASE_DIRECTORY)
+                    if pattern_of_cve_object_in_file is not None:
+                        await self._working_with_extract_data(cve_id, pattern_of_cve_object_in_file,item.get("html_url"), path_to_poc_cve_object,
+                                                            type_of_the_directory=TypeOfTheDirectory.CVE_DATABASE_DIRECTORY)
+                    print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
         
-    async def _working_with_extract_data(self,cve_id: str, pattern_of_some_objects: str,new_github_url: str, path_to_new_poc_object: str, 
-                                         type_of_the_directory: TypeOfTheDirectory):
+    async def _working_with_extract_data(self, cve_id: str, pattern_of_some_objects: str, new_github_url: str, 
+                                     path_to_new_poc_object: str, type_of_the_directory: TypeOfTheDirectory):
         print(f"Working in extract data {cve_id}", type_of_the_directory.name)
+        
         description = await self._extract_description(pattern_of_some_objects)
+        
         if not description:
             path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=TypeOfTheDirectory.CVE_DATABASE_DIRECTORY)
-            pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object)
+            pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object,TypeOfTheDirectory.CVE_DATABASE_DIRECTORY)
+            if pattern_of_cve_object_in_file is None:
+                print(f"No data in the file or the file doesn't exist for CVE: {cve_id}")
+                return
+
             description = await self._extract_description(pattern_of_cve_object_in_file)
+
         match type_of_the_directory:
             case TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY:
                 all_references = await self._extract_all_references(pattern_of_some_objects)
                 if new_github_url not in all_references:
                     all_references.append(new_github_url)
                 cve_model = CveModelForPoC(description, all_references)
-                await write_poc_with_full_path(cve_id,cve_model,path_to_new_poc_object,POCChoiceSearch.GITHUB_API_SEARCH)
+                await write_poc_with_full_path(cve_id, cve_model, path_to_new_poc_object, POCChoiceSearch.GITHUB_API_SEARCH)
             case TypeOfTheDirectory.CVE_DATABASE_DIRECTORY:
                 new_poc_object = NewPocObject(description[0], new_github_url) 
                 await write_new_poc_object(cve_id, new_poc_object, path_to_new_poc_object)
+
 
     async def _extract_all_references(self, cve_object: str) -> List[str]:
         return re.findall(r'(https://[0-9*?:;№"@!?><a-zA-z./-]+)', cve_object)
