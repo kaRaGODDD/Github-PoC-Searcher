@@ -22,14 +22,14 @@ async def return_location_of_cve_object(string_cve_object: str, type_of_the_dire
         case TypeOfTheDirectory.CVE_DATABASE_DIRECTORY:
             path_determined_by_type_of_directory = await _get_directory_path_for_type(data_about_cve.cve_year, type_of_the_directory)
             path_to_cve_object = await _get_directory_path_for_cve_object(data_about_cve, path_determined_by_type_of_directory)
-    return path_to_cve_object
+    return os.path.join(path_to_cve_object,string_cve_object)
             
     
 async def _get_directory_path_for_type(cve_year: int, type_of_the_directory: TypeOfTheDirectory) -> str:
     match type_of_the_directory:
-        case TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY:
-            return os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"), cve_year)
         case TypeOfTheDirectory.CVE_DATABASE_DIRECTORY:
+            return os.path.join(os.getenv("PATH_TO_THE_DATA_DIRECTORY"), cve_year)
+        case TypeOfTheDirectory.PROOF_OF_CONCEPT_DIRECTORY:
             return os.path.join(os.getenv("PATH_TO_THE_POC_DIRECTORY"),cve_year)
 
 async def _get_directory_path_for_cve_object(cve_object:  ComponentsOfCveID, path_to_cve_object: str) -> str:
@@ -76,5 +76,6 @@ async def _generate_folder_name(cve_obj: ComponentsOfCveID):
 
 async def _extract_cve_components(cve_id: str) -> ComponentsOfCveID:
     split_object = cve_id.split('-')
+    print(split_object)
     return ComponentsOfCveID(split_object[0], split_object[1], split_object[2])
 
