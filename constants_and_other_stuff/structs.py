@@ -33,6 +33,6 @@ class CvePoc(NamedTuple):
     description: str
     formatted_references: str
 
-class NewPocObject:
+class NewPocObject(NamedTuple):
     description: str
     github_url: str
