@@ -33,11 +33,11 @@ class PoCSearcher:
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
         self._path_to_the_cve_database = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
-        self._url = "https://api.github.com/search/repositories?q={}"#os.getenv("GITHUB_API_URL")
+        self._url = os.getenv("GITHUB_API_URL")
         self._headers = {"Authorization": f"Bearer {self._github_token}"}
         self._search_choice = search_choice
         self._graphql_url = os.getenv("GITHUB_GRAPHQL_URL")
-        self._special_url_for_update = "https://api.github.com/search/repositories?q=cve%20created:{}..{}"#os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
+        self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search(self):
         while True:
