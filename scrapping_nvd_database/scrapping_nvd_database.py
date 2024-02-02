@@ -13,7 +13,7 @@ from datetime_manager.create_datetime_intervals import create_intervals
 from constants_and_other_stuff.returning_values import return_nvd_api_url, return_nvd_api_key
 from constants_and_other_stuff.pydantic_models import CveExploit
 from constants_and_other_stuff.structs import StringInterval
-from constants_and_other_stuff.enums import FileSaving
+from constants_and_other_stuff.enums import FileSaving, TypeOfScrapping
 
 load_dotenv()
 
@@ -23,23 +23,25 @@ class NvdDataBaseScrapper:
                  file_saving: FileSaving = FileSaving.MD):
         self.string_interval = string_interval
         self._file_saving = file_saving
+        self._url = os.getenv("NVD_API_URL")
+        self._nvd_api_key = os.getenv("NVD_API_KEY")
+        self._headers = {'apiKey':self._nvd_api_key}
 
-    async def start_scrapping(self, rewrite_last_date_scrapping: bool=False):
+    async def start_scrapping(self, rewrite_last_date_scrapping: bool=False, type_of_scrapping: TypeOfScrapping=TypeOfScrapping.SCRAPPING):
         try:
             if rewrite_last_date_scrapping:
-                await write_last_date_scrapping()
-            await self._handle_intervals()
+                await write_last_date_scrapping("LAST_SCRAPPING_DATE_OF_NVD")
+            await self._handle_intervals(type_of_scrapping)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    async def update(self,rewrite_last_date_scrapping: bool=False):
+    async def update(self,rewrite_last_date_scrapping: bool=False, last_date_scrapping: str="2024-01-01T00:00:00"):
         try:
-            last_date_scrapping = os.getenv("LAST_DATE_SCRAPPING")
             current_date_scrapping = datetime.datetime.now().strftime("%Y-%m-%d")
             if last_date_scrapping is None:
                 last_date_scrapping = datetime.datetime.now().strftime("%Y-%m-%d")
-            await self.set_interval(StringInterval(last_date_scrapping,current_date_scrapping))
-            await self.start_scrapping(rewrite_last_date_scrapping)
+            await self.set_interval(StringInterval(last_date_scrapping.split('T')[0],current_date_scrapping))
+            await self.start_scrapping(rewrite_last_date_scrapping, type_of_scrapping=TypeOfScrapping.UPDATE)
         except Exception as e:
             print(f"An unexpected error occurred method update: {e}")
 
@@ -60,13 +62,16 @@ class NvdDataBaseScrapper:
         except Exception as e:
             print(f"An unexpected error occurred method handle_api request: {e}", url)
 
-    async def _handle_intervals(self):
+    async def _handle_intervals(self, type_of_scrapping: TypeOfScrapping = TypeOfScrapping.SCRAPPING):
         try:
-            url = await return_nvd_api_url()
-            nvd_api_key = await return_nvd_api_key()
-            headers = {'apiKey': nvd_api_key}
             intervals = await create_intervals(self.string_interval)
-            tasks = [self._handle_api_request(url.format(interval.first_interval, interval.second_interval), interval, headers) for interval in intervals]
+            match type_of_scrapping:
+                case TypeOfScrapping.SCRAPPING:
+                    tasks = [self._handle_api_request(self._url.format(interval.first_interval + "T" + "00:00:00", interval.second_interval + "T" + "23:59:59"),
+                                              interval, self._headers) for interval in intervals]
+                case TypeOfScrapping.UPDATE:
+                    tasks = [self._handle_api_request(self._url.format(interval.first_interval + "T" + "00:00:00" , interval.second_interval + "T" + datetime.datetime.now().strftime("%H:%M:%S")),
+                                              interval, self._headers) for interval in intervals]
             await asyncio.gather(*tasks)
         except Exception as e:
             print(f"An unexpected error occurred handle intervals: {e}")
@@ -98,7 +103,7 @@ class NvdDataBaseScrapper:
             print(f"An unexpected error occurred: {e}", url)
 
 async def main():
-    a = NvdDataBaseScrapper(StringInterval("2023-01-01","2024-01-30"),file_saving=FileSaving.JSON)
-    await a.start_scrapping()
+    a = NvdDataBaseScrapper(StringInterval("2024-01-01","2024-01-31"),file_saving=FileSaving.MD)
+    await a.update(last_date_scrapping=os.getenv("LAST_SCRAPPING_DATE_OF_NVD"))
 
 asyncio.run(main())
