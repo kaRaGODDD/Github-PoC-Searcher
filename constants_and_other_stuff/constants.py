@@ -34,7 +34,7 @@ pattern_of_md_file = '''
 '''
 
 pattern_of_md_poc_file = '''
-# {}
+# [{}]({})
 
 ## Description
 
@@ -53,7 +53,7 @@ query {{
       resetAt
   }}
   search(query: "{}", type: REPOSITORY, first: 100) {{
-    repositoryCount
+    repositoryCount 
     edges {{
       node {{
         ... on Repository {{
