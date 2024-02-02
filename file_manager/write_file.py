@@ -18,8 +18,8 @@ async def write_file_by_pattern(ready_cve_object: CveExploit, path: str):
     async with aiofiles.open(where_to_write, 'w', encoding='utf-8') as f:
         await f.write(pattern_of_md_file.format(
             ready_cve_object.id,
-            ready_cve_object.references[0].url if ready_cve_object.references else "",
-            ready_cve_object.descriptions[0].value if ready_cve_object.descriptions else "",
+            f"https://cve.mitre.org/cgi-bin/cvename.cgi?name={ready_cve_object.id}",
+            ready_cve_object.descriptions[0].value.replace("\n","").strip() if ready_cve_object.descriptions else "",
             ready_cve_object.metrics.cvssMetricV2[0].cvssData.accessVector if ready_cve_object.metrics.cvssMetricV2 else "",
             ready_cve_object.metrics.cvssMetricV2[0].cvssData.baseScore if ready_cve_object.metrics.cvssMetricV2 else "",
             ready_cve_object.metrics.cvssMetricV2[0].exploitabilityScore if ready_cve_object.metrics.cvssMetricV2 else "",
