@@ -75,7 +75,6 @@ class CreateCveDatabase(GithubManager):
         await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         await self.push_changes_to_server()
 
-#TODO сделать временные интервалы гибкими, а то так неудобно
 async def main():
     a = CreateCveDatabase()
     await a.update_database()
