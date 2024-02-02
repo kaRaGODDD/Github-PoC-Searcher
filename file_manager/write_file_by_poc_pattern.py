@@ -15,7 +15,7 @@ async def write_poc(cve_id: str, poc_object: CveModelForPoC, path: str,search_ch
     async with aiofiles.open(where_to_write, "w", encoding='utf-8') as f:
         await f.write(pattern_of_md_poc_file.format(
             ready_poc_object.cve_id,
-            ready_poc_object.description,
+            f"- `{ready_poc_object.description}`",
             ready_poc_object.formatted_references
         ))
 
@@ -32,7 +32,6 @@ async def write_poc_with_full_path(cve_id: str, poc_object: CveModelForPoC, full
 
 async def write_new_poc_object(cve_id: str, new_poc_object: NewPocObject, path_to_the_new_poc_object: str):
     print(f"Path to new poc object {path_to_the_new_poc_object}")
-    print(new_poc_object.description)
     async with aiofiles.open(path_to_the_new_poc_object, "w", encoding='utf-8') as f:
         await f.write(pattern_of_md_poc_file.format(
             cve_id,
