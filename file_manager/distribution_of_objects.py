@@ -79,6 +79,4 @@ async def _generate_folder_name(cve_obj: ComponentsOfCveID):
 
 async def _extract_cve_components(cve_id: str) -> ComponentsOfCveID:
     split_object = cve_id.split('-')
-    print(split_object)
     return ComponentsOfCveID(split_object[0], split_object[1], split_object[2])
-
