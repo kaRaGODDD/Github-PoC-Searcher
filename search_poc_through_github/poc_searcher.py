@@ -12,8 +12,7 @@ from typing import List
 from datetime_manager.create_datetime_intervals import create_intervals
 from datetime_manager.return_last_date_and_current import return_last_current_intervals_for_poc_update
 
-from file_manager.write_file_by_poc_pattern import write_new_poc_object
-from file_manager.write_file_by_poc_pattern import write_poc_with_full_path
+from file_manager.write_file_by_poc_pattern import write_poc_with_full_path, write_new_poc_object
 from file_manager.process_of_distribution_poc import process_of_distribute_poc
 from file_manager.distribution_of_objects import return_location_of_cve_object
 from file_manager.read_files import read_file_by_path
@@ -23,12 +22,13 @@ from working_with_API.working_with_github_API import how_many_pages_by_query, re
 from constants_and_other_stuff.returning_values import return_github_api_url
 from constants_and_other_stuff.pydantic_models import HtmlUrlFromResponse, GraphQLAnswerModel
 from constants_and_other_stuff.structs import CveModelForPoC, ProcessCVEID, StringInterval, NewPocObject, CveModelForPoC
-from constants_and_other_stuff.enums import POCChoiceSearch, TypeOfTheDirectory
+from constants_and_other_stuff.enums import POCChoiceSearch, TypeOfTheDirectory, TypeOfPOCSearching
 from constants_and_other_stuff.constants import GRAPHQL_QUERY
 
 load_dotenv()
 
 class PoCSearcher:
+    '''Class represent PoC search in github'''
     def __init__(self,search_choice: POCChoiceSearch = POCChoiceSearch.GRAPHQL_SEARCH):
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
@@ -39,10 +39,18 @@ class PoCSearcher:
         self._graphql_url = os.getenv("GITHUB_GRAPHQL_URL")
         self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
-    async def start_search(self):
+    async def start_search(self, type_of_poc_searching: TypeOfPOCSearching):
         while True:
             try:
-                await self._traverse_cve_database_consistently()
+                match type_of_poc_searching:
+                    case TypeOfPOCSearching.TRAVERSE_ALL_CVE_DIRECTORY:
+                        await self._traverse_cve_database_consistently()
+                    case type_of_poc_searching.TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY:
+                        print("Please input year ")
+                        year = input()
+                        if year > datetime.now().year:
+                            raise Exception(f"That year {year} greater than current year")
+                        await self._traverse_cve_database_by_year(year)
             except Exception as e:
                 print(f"ServerDisconnectedError: {e}")
                 print("Reconnecting...")
@@ -62,9 +70,10 @@ class PoCSearcher:
 
     async def _traverse_cve_database_consistently(self):
         for root, dirs, files in os.walk(self._path_to_the_cve_database):
-            if '.git' in dirs and "JSON_ANSWERS":
+            if '.git' in dirs:
                 dirs.remove('.git')
-                dirs.remove('JSON_ANSWERS')
+            if os.getenv("NAME_OF_THE_JSON_AWSWERS_DIRECTORY") in dirs:
+                dirs.remove(os.getenv("NAME_OF_THE_JSON_AWSWERS_DIRECTORY"))
             for file in files:
                 if file != "README.md":
                     cve_file_path = os.path.join(root, file)
@@ -75,10 +84,12 @@ class PoCSearcher:
                         poc_object = await self._generate_poc_object(cve_file_path, cve_need_to_processing)
                         await process_of_distribute_poc(cve_id, poc_object,self._search_choice)
 
-    async def _traverse_cve_database_by_id(self,year: str):
+    async def _traverse_cve_database_by_year(self, year: str):
         for root, dirs, files in os.walk(os.getenv("PATH_TO_THE_ASYNC_SCRAPPING").format(year)):
             if '.git' in dirs:
                 dirs.remove('.git')
+            if os.getenv("NAME_OF_THE_JSON_AWSWERS_DIRECTORY") in dirs:
+                dirs.remove(os.getenv("NAME_OF_THE_JSON_AWSWERS_DIRECTORY"))
             for file in files:
                 if file != "README.md":
                     cve_file_path = os.path.join(root, file)
@@ -126,7 +137,7 @@ class PoCSearcher:
                             print(f"Rate limit exceeded, waiting for {time_to_wait} seconds.")
                             await asyncio.sleep(time_to_wait + 4)
                     else:
-                        await asyncio.sleep(0.33) #0.33 надо поставить, 408 на 0.437
+                        await asyncio.sleep(0.33)
 
                     data = await response.json()
                     return data
@@ -232,8 +243,7 @@ class PoCSearcher:
         if matches:
             new_name_of_the_repository = "-".join(matches[0]).upper()
             return new_name_of_the_repository
-        else:
-            return ""
+        return ""
 
 
 async def main():
