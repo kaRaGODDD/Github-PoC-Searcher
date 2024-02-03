@@ -43,14 +43,16 @@ class PoCSearcher:
         while True:
             try:
                 match type_of_poc_searching:
-                    case TypeOfPOCSearching.TRAVERSE_ALL_CVE_DIRECTORY:
+                    case TypeOfPOCSearching.TRAVERSE_ALL_CVE_DIRECTORIES:
                         await self._traverse_cve_database_consistently()
-                    case type_of_poc_searching.TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY:
+                    case TypeOfPOCSearching.TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY:
                         print("Please input year ")
                         year = input()
                         if year > datetime.now().year:
                             raise Exception(f"That year {year} greater than current year")
                         await self._traverse_cve_database_by_year(year)
+                    case TypeOfPOCSearching.TRAVERSE_MULTIPLE_DIRECTORIES:
+                        await self._traverse_cve_database_all_directories_at_once()
             except Exception as e:
                 print(f"ServerDisconnectedError: {e}")
                 print("Reconnecting...")
@@ -64,8 +66,8 @@ class PoCSearcher:
         query_intervals = await create_intervals(new_string_interval)
         await self._special_search_for_update(query_intervals)
 
-    async def _traverse_cve_database(self):
-        tasks = [self._traverse_cve_database_by_id(year) for year in range(1999,datetime.now().year+1)]
+    async def _traverse_cve_database_all_directories_at_once(self):
+        tasks = [self._traverse_cve_database_by_year(year) for year in range(1999,datetime.now().year+1)]
         await asyncio.gather(*tasks)
 
     async def _traverse_cve_database_consistently(self):
@@ -100,8 +102,7 @@ class PoCSearcher:
                         poc_object = await self._generate_poc_object(cve_file_path, cve_need_to_processing)
                         await process_of_distribute_poc(cve_id, poc_object,self._search_choice)
 
-
-    async def _handle_cve_id(self,cve_id: str) -> ProcessCVEID:
+    async def _handle_cve_id(self, cve_id: str) -> ProcessCVEID:
         try:
             match self._search_choice:
                 case POCChoiceSearch.GITHUB_API_SEARCH:
@@ -174,7 +175,7 @@ class PoCSearcher:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
     
-    async def _special_search_for_update(self,intervals: List[StringInterval]):
+    async def _special_search_for_update(self, intervals: List[StringInterval]):
         for i in range(0,len(intervals)):
             since, until = intervals[i].first_interval, intervals[i].second_interval
             new_url = self._special_url_for_update.format(since,until)
