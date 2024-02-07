@@ -12,27 +12,27 @@ class DatetimeInterval(NamedTuple):
     second_interval: datetime
 
 
-class ComponentsOfCveID(NamedTuple):
+class CveIDComponents(NamedTuple):
     cve: str
     cve_year: int
     cve_id: int
 
 
-class CveModelForPoC(NamedTuple):
+class PoCModel(NamedTuple):
     description: str
     github_urls: [List[str]]
 
 
-class ProcessCVEID(NamedTuple):
+class CVEIDProcessing(NamedTuple):
     need: bool
     github_urls: List[str]
 
 
-class CvePoc(NamedTuple):
+class POCData(NamedTuple):
     cve_id: str
     description: str
     formatted_references: str
 
-class NewPocObject(NamedTuple):
+class PocObject(NamedTuple):
     description: str
     github_url: str
