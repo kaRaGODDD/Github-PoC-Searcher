@@ -1,4 +1,4 @@
-pattern_of_md_file = '''
+CVE_FILE_TEMPLATE = '''
 # [{}]({})
 
 ## Description
@@ -33,7 +33,7 @@ pattern_of_md_file = '''
 {}
 '''
 
-pattern_of_md_poc_file = '''
+POC_FILE_TEMPLATE = '''
 # [{}]({})
 
 ## Description
@@ -64,3 +64,5 @@ query {{
   }}
 }}
 '''
+
+MITRE_URL = "https://cve.mitre.org/cgi-bin/cvename.cgi?name={}"
