@@ -7,10 +7,11 @@ from dotenv import load_dotenv
 from github import Github
 from github_manager.personal_github_manager import GithubManager
 from scrapping_nvd_database.scrapping_nvd_database import NvdDataBaseScrapper
+from constants_and_other_stuff.enums import FileFormat
 
 load_dotenv()
 
-class CreateCveDatabase(GithubManager):
+class CVEDatabase(GithubManager):
 
     def __init__(self):
         self._path_to_local_repository = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
@@ -69,14 +70,14 @@ class CreateCveDatabase(GithubManager):
 
     async def update_database(self, rewrite_last_date: bool=True):
         """Update the database. 5 Принцип Solid нарущен нужно instance передать в параметры метода ну и там наследоваться"""
-        nvd_instance = NvdDataBaseScrapper()
+        nvd_instance = NvdDataBaseScrapper(file_saving=FileFormat.JSON)
         await nvd_instance.update(rewrite_last_date)
         await self.add_in_index() 
         await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         await self.push_changes_to_server()
 
 async def main():
-    a = CreateCveDatabase()
+    a = CVEDatabase()
     await a.update_database()
 
 asyncio.run(main())
