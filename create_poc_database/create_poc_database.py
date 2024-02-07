@@ -10,10 +10,10 @@ from scrapping_nvd_database.scrapping_nvd_database import NvdDataBaseScrapper
 
 load_dotenv()
 
-class CreatePocDatabase(GithubManager):
+class POCDatabase(GithubManager):
 
     def __init__(self):
-        self._path_to_local_repository = os.getenv("PATH_TO_THE_POC_DIRECTORY")
+        self._path_to_local_repository = "D:\python\cve_with_their_poc"#os.getenv("PATH_TO_THE_POC_DIRECTORY")
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._user = Github(self._github_token).get_user()
 
@@ -48,6 +48,7 @@ class CreatePocDatabase(GithubManager):
     async def add_in_index(self):
         """Add changes to the Git index in preparation for a commit."""
         os.chdir(self._path_to_local_repository)
+        #subprocess.run(["git","init"])
         subprocess.run(["git", "add", "."])
 
     async def make_a_commit(self, commit_message: str):
@@ -70,3 +71,11 @@ class CreatePocDatabase(GithubManager):
     async def update_database(self, rewrite_last_date: bool=True):
         """Update the database."""
         ...
+        
+async def main():
+    a = POCDatabase()
+    await a.add_in_index()
+    await a.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d' '%H-%M-%S')}")
+    await a.push_changes_to_server()
+
+asyncio.run(main())
