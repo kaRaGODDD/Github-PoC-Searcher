@@ -26,3 +26,8 @@ class POCSearchType(Enum):
     TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY = auto()
     TRAVERSE_ALL_DIRECTORIES_AT_ONCE = auto()
     
+
+class CveIDFromDifferentSources(Enum):
+    FROM_REPOSITORY_NAME = auto()
+    FROM_DESCRIPTION = auto()
+    FROM_TOPICS = auto()
