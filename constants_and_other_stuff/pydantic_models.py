@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-import json
 
 
 class _Item(BaseModel):
@@ -38,8 +37,8 @@ class CveExploit(BaseModel):
     published: str
     vulnStatus: str
     descriptions: List[_Description]
-    metrics: _Metrics
     references: List[_Source]
+    metrics: _Metrics
     
 class _RepositoryQL(BaseModel):
     url: str
