@@ -1,6 +1,8 @@
 from datetime import datetime
-from typing import NamedTuple, List, Union
+from typing import List, NamedTuple, Union
+
 from constants_and_other_stuff.pydantic_models import GraphQLAnswerModel
+
 
 class StringInterval(NamedTuple):
     first_interval: str 
@@ -18,7 +20,7 @@ class CveIDComponents(NamedTuple):
     cve_id: int
 
 
-class PoCModel(NamedTuple):
+class POCModel(NamedTuple):
     description: str
     github_urls: [List[str]]
 
@@ -33,6 +35,6 @@ class POCData(NamedTuple):
     description: str
     formatted_references: str
 
-class PocObject(NamedTuple):
+class POCObject(NamedTuple):
     description: str
     github_url: str
