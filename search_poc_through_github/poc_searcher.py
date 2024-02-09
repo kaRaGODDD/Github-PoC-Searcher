@@ -28,17 +28,17 @@ from constants_and_other_stuff.constants import GRAPHQL_QUERY, GRAPHQL_QUERY_FOR
 
 load_dotenv()
 
-class GithubPOCSearcher:
+class GithubPOCSearcher: #Переименовать в github poc searcher
     '''Class represent PoC search in github'''
     def __init__(self,search_choice: POCSearchMethod = POCSearchMethod.GRAPHQL_SEARCH):
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
         self._path_to_the_cve_database = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
-        self._url = os.getenv("GITHUB_API_URL")   
+        self._url = "https://api.github.com/search/repositories?q={}"#os.getenv("GITHUB_API_URL")   
         self._headers = {"Authorization": f"Bearer {self._github_token}"}
         self._search_choice = search_choice
         self._graphql_url = os.getenv("GITHUB_GRAPHQL_URL")
-        self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
+        self._special_url_for_update = "https://api.github.com/search/repositories?q=cve%20created:{}..{}"#os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search_by_traverse_directory(self, type_of_poc_searching: POCSearchType):
         while True:
@@ -64,6 +64,7 @@ class GithubPOCSearcher:
         await self._second_fast_search_by_github_api(query_intervals)
 
     async def _second_fast_search_by_github_api(self, intervals: List[StringInterval]):
+        #await self._process_each_page_v2(intervals[0])
         tasks = [(self._process_each_page_v2(intervals[i])) for i in range(0, len(intervals))]
         await asyncio.gather(*tasks)
  
@@ -74,6 +75,7 @@ class GithubPOCSearcher:
             await self._processing_data_from_fast_search_validator(distribution_data.data.search.edges)
         except ValidationError as e:
             print(e)
+                #raise ValidationError(f"Validation error was occured {e}")
     
     async def _get_data_for_fast_search(self, string_date_interval: StringInterval):
         try:
@@ -101,7 +103,7 @@ class GithubPOCSearcher:
             elif cve_ids_from_repository_description:
                 await self._process_each_cve_id_v2(cve_ids_from_repository_description, value.node.url)
             else:
-                combine_all_topics = self._get_all_topics_in_one_string(value.node.repositoryTopics.edges)
+                combine_all_topics = await self._get_all_topics_in_one_string(value.node.repositoryTopics.edges)
                 if combine_all_topics:
                     cve_ids_from_repository_topics = await self._extract_cve_ids(combine_all_topics)
                     if cve_ids_from_repository_topics:
@@ -131,9 +133,9 @@ class GithubPOCSearcher:
             else:
                 print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
 
-    async def _get_all_topics_in_one_string(list_of_topics: List[Edge]) -> str:
-        for each_topic in list_of_topics:
-            topic_string = " ".join(each_topic.node.topic)
+    async def _get_all_topics_in_one_string(self, list_of_topics: List[Edge]) -> str:
+        topic_list = [each_topic.node.topic.name for each_topic in list_of_topics]
+        topic_string = " ".join(topic_list)
         return topic_string
 
     async def fast_search(self, string_interval: StringInterval):
@@ -220,6 +222,7 @@ class GithubPOCSearcher:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             raise
+
                     
     async def _generate_poc_object(self,path_to_cve_file: str, cve_need_to_processing: CVEIDProcessing):
         content_from_file = await read_file_by_path(path_to_cve_file)
@@ -250,15 +253,17 @@ class GithubPOCSearcher:
             since, until = intervals[i].first_interval, intervals[i].second_interval
             new_url = self._special_url_for_update.format(since, until)
             pages_on_query = await how_many_pages_by_query(new_url, per_search=30)
+            #await self._process_each_page(new_url, 0)
             tasks = [self._process_each_page(new_url, page) for page in range(0, pages_on_query + 1)]
             await asyncio.gather(*tasks)
 
     async def _process_each_page(self, new_url: str, page: int):
         data = await return_data_from_query(url=new_url, headers=self._headers, page=page)
         if not data.get("items"):
-            print("PROBABLY RATE LIMIT EXCEEDED", new_url)
+            print("I AM HERE", new_url)
             await asyncio.sleep(2)   
         if data.get("items"):
+            #TODO sleep and in working github api тоже sleep добавил надо проверить потом будет их на работоспособность
             for api_answer in data.get("items"):
                 cve_ids_from_repository_name = await self._extract_cve_ids(api_answer.get("name"))
                 cve_ids_from_repository_description = await self._extract_cve_ids(api_answer.get("description"))
