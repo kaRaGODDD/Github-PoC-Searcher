@@ -22,7 +22,7 @@ class CveIDComponents(NamedTuple):
 
 class POCModel(NamedTuple):
     description: str
-    github_urls: [List[str]]
+    github_urls: List[str]
 
 
 class CVEIDProcessing(NamedTuple):
