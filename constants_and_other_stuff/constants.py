@@ -65,4 +65,30 @@ query {{
 }}
 '''
 
+GRAPHQL_QUERY_FOR_FAST_INTERVAL_FAST_SEACH = '''
+query {{
+  search(query: "cve created:{}..{}", type: REPOSITORY, first: 100) {{
+    repositoryCount
+    edges {{
+      node {{
+        ... on Repository {{
+          name
+          description
+          repositoryTopics(first: 100) {{
+            edges {{
+              node {{
+                topic {{
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+      }}
+    }}
+  }}
+}}
+'''
+
+
 MITRE_URL = "https://cve.mitre.org/cgi-bin/cvename.cgi?name={}"
