@@ -82,12 +82,12 @@ class _Edge(BaseModel):
 
 
 class _RepositoryTopics(BaseModel):
-    edges: Optional[List[_Edge]] = Field([], alias='edges')
+    edges: Optional[List[_Edge]] = Field(None, alias='edges')
 
 
 class _Node(BaseModel):
     name: str
-    description: Optional[str] = Field("", alias='description')
+    description: Optional[str] = Field(None, alias='description')
     repositoryTopics: _RepositoryTopics
 
 
@@ -97,7 +97,7 @@ class EdgeData(BaseModel):
 
 class _Search(BaseModel):
     repositoryCount: int
-    edges: Optional[List[EdgeData]] = Field([], alias='edges')
+    edges: Optional[List[EdgeData]] = Field(None, alias='edges')
 
 
 class _Data(BaseModel):
