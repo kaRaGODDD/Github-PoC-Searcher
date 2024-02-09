@@ -1,4 +1,3 @@
-import asyncio
 import os
 
 async def create_directory(name_of_the_directory: str, path_where_need_to_create: str):
