@@ -1,4 +1,6 @@
+import asyncio
 import aiohttp
+from datetime import datetime
 from math import ceil
 
 async def how_many_pages_by_query(url: str, per_search: int) -> int:
