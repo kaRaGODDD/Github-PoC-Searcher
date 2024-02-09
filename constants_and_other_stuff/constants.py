@@ -65,7 +65,7 @@ query {{
 }}
 '''
 
-GRAPHQL_QUERY_FOR_FAST_INTERVAL_FAST_SEACH = '''
+GRAPHQL_QUERY_FOR_FAST_INTERVAL_SEACH = '''
 query {{
   search(query: "cve created:{}..{}", type: REPOSITORY, first: 100) {{
     repositoryCount
