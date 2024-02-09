@@ -77,17 +77,18 @@ class _NodeTopic(BaseModel):
     topic: _Topic
 
 
-class _Edge(BaseModel):
+class Edge(BaseModel):
     node: _NodeTopic
 
 
 class _RepositoryTopics(BaseModel):
-    edges: Optional[List[_Edge]] = Field(None, alias='edges')
+    edges: Optional[List[Edge]] = Field(None, alias='edges')
 
 
 class _Node(BaseModel):
     name: str
     description: Optional[str] = Field(None, alias='description')
+    url: Optional[str] = Field(None, alias='url')
     repositoryTopics: _RepositoryTopics
 
 
