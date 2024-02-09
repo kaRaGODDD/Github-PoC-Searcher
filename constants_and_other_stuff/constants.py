@@ -74,6 +74,7 @@ query {{
         ... on Repository {{
           name
           description
+          url
           repositoryTopics(first: 100) {{
             edges {{
               node {{
