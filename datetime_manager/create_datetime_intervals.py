@@ -1,11 +1,12 @@
 import os
-import datetime 
+import datetime
 
-from constants_and_other_stuff.structs import StringInterval, DatetimeInterval
+from typing import List, Union
+from dotenv import load_dotenv
 from dateutil.relativedelta import relativedelta
 
-from typing import List
-from dotenv import load_dotenv
+from constants_and_other_stuff.structs import StringInterval, DatetimeInterval
+
 
 load_dotenv()
 
@@ -27,7 +28,7 @@ async def _split_interval_by_parts(interval: StringInterval) -> List[StringInter
 async def _convert_to_datetime_interval(interval: StringInterval) -> DatetimeInterval:  
     first_datetime_interval = datetime.datetime.strptime(interval.first_interval,"%Y-%m-%d")
     second_datetime_interval = datetime.datetime.strptime(interval.second_interval,"%Y-%m-%d")
-    return DatetimeInterval(first_datetime_interval,second_datetime_interval)
+    return DatetimeInterval(first_datetime_interval, second_datetime_interval)
 
-async def _return_components(intervals: DatetimeInterval | StringInterval) -> tuple[str | datetime.datetime, str | datetime.datetime]:
+async def _return_components(intervals: Union[DatetimeInterval, StringInterval]) -> tuple[Union[str, datetime.datetime], Union[str, datetime.datetime]]:
     return (intervals.first_interval, intervals.second_interval)
