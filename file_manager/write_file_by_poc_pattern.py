@@ -44,11 +44,12 @@ async def write_new_poc_object(cve_id: str, new_poc_object: POCObject, path_to_t
             f'- ["Follow the link"]({new_poc_object.github_url})'
         ))
 
-async def _return_ready_poc_object(cve_id: str, cve_model: POCModel,search_choice: POCSearchMethod) -> POCData:
+async def _return_ready_poc_object(cve_id: str, cve_model: POCModel, search_choice: POCSearchMethod) -> POCData:
     description = cve_model.description[0].strip("[]'") if cve_model.description and cve_model.description[0] else ""
     match search_choice:
         case POCSearchMethod.GITHUB_API_SEARCH: #{ref["url"]})
-            references_formatted = "\n".join([f'- ["Follow the link"]({ref})' for ref in cve_model.github_urls if ref != MITRE_URL]) if cve_model.github_urls else ""
+            references_formatted = "\n".join([f'- ["Follow the link"]({ref})' for ref in cve_model.github_urls if ref != MITRE_URL.format('').rstrip("=")]) if cve_model.github_urls else ""
         case POCSearchMethod.GRAPHQL_SEARCH:
-            references_formatted = "\n".join([f'- ["Follow the link"]({ref.node.url})' for ref in cve_model.github_urls if ref.node.url != MITRE_URL]) if cve_model.github_urls else ""
+            references_formatted = "\n".join([f'- ["Follow the link"]({ref.node.url})' for ref in cve_model.github_urls if ref.node.url != MITRE_URL.format('').rstrip("=")]) if cve_model.github_urls else ""
     return POCData(cve_id, description, references_formatted)
+
