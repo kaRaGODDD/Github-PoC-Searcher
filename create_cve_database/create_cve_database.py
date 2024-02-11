@@ -1,13 +1,15 @@
-import asyncio
 import os
 import subprocess
 
 from datetime import datetime
+
 from dotenv import load_dotenv
 from github import Github
+
 from github_manager.personal_github_manager import GithubManager
-from scrapping_nvd_database.scrapping_nvd_database import NvdDataBaseScrapper
+from scrapping_nvd_database.scrapping_nvd_database import NVDScraper
 from constants_and_other_stuff.enums import FileFormat
+
 
 load_dotenv()
 
@@ -69,15 +71,8 @@ class CVEDatabase(GithubManager):
             print(f"Error pushing changes to 'dev': {e}")
 
     async def update_database(self, rewrite_last_date: bool=True):
-        """Update the database. 5 Принцип Solid нарущен нужно instance передать в параметры метода ну и там наследоваться"""
-        nvd_instance = NvdDataBaseScrapper(file_saving=FileFormat.JSON)
+        nvd_instance = NVDScraper(file_saving=FileFormat.JSON)
         await nvd_instance.update(rewrite_last_date)
         await self.add_in_index() 
         await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         await self.push_changes_to_server()
-
-async def main():
-    a = CVEDatabase()
-    await a.update_database()
-
-asyncio.run(main())

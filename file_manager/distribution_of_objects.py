@@ -41,7 +41,7 @@ async def _get_directory_path_for_type(cve_year: int, type_of_the_directory: Dir
 async def _get_directory_path_for_cve_object(cve_object:  CveIDComponents, path_to_cve_object: str) -> str:
     determine_folder_name_by_formula = await _generate_folder_name(cve_object)
     path = os.path.join(path_to_cve_object, determine_folder_name_by_formula)
-    if not os.path.exists(path):
+    if not os.path.exists(path): #тут происходит ошибка
         await create_directory(determine_folder_name_by_formula, path_to_cve_object)
     return path
 
