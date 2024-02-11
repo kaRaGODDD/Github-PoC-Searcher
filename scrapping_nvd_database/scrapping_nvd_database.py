@@ -24,7 +24,7 @@ class NVDScraper:
                  file_format: FileFormat = FileFormat.MD):
         self.string_interval = string_interval
         self._file_format = file_format
-        self._url = "https://services.nvd.nist.gov/rest/json/cves/2.0/?pubStartDate={}&pubEndDate={}"#os.getenv("NVD_API_URL")    #I don`t know the reason why it doesnt 
+        self._url = os.getenv("NVD_API_URL")  
         self._nvd_api_key = os.getenv("NVD_API_KEY")
         self._headers = {'apiKey':self._nvd_api_key}
 
