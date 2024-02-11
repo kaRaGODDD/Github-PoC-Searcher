@@ -4,9 +4,10 @@ import os
 import re
 
 from aiohttp import ServerDisconnectedError
-from pydantic import ValidationError
 from datetime import datetime
 from dotenv import load_dotenv
+from pydantic import ValidationError
+from loguru import logger
 from typing import List
 
 from datetime_manager.create_datetime_intervals import create_intervals
@@ -28,7 +29,10 @@ from constants_and_other_stuff.constants import GRAPHQL_QUERY, GRAPHQL_QUERY_FOR
 
 load_dotenv()
 
-class GithubPOCSearcher: #Переименовать в github poc searcher
+logger.add('logs/log.log', rotation="10 mb", level="DEBUG")
+
+
+class GithubPOCSearcher:
     '''Class represent PoC search in github'''
     def __init__(self,search_choice: POCSearchMethod = POCSearchMethod.GRAPHQL_SEARCH):
         self._github_token = os.getenv("GITHUB_TOKEN")
@@ -52,8 +56,8 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     case POCSearchType.TRAVERSE_ALL_DIRECTORIES_AT_ONCE:
                         await self._traverse_cve_database_all_directories_at_once()
             except Exception as e:
-                print(f"ServerDisconnectedError: {e}")
-                print("Reconnecting...")
+                logger.warning(f"ServerDisconnectedError: {e}")
+                logger.warning("Reconnecting...")
                 await asyncio.sleep(5)
                 continue
             else:
@@ -73,7 +77,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
             distribution_data = FastSearchValidator(**data)
             await self._processing_data_from_fast_search_validator(distribution_data.data.search.edges)
         except ValidationError as e:
-            print(e)
+            logger.warning(f"Validation error of second version of process page {e}")
     
     async def _get_data_for_fast_search(self, string_date_interval: StringInterval):
         try:
@@ -81,15 +85,15 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
             async with aiohttp.ClientSession() as session:
                 async with session.post(url=self._graphql_url, json={"query": query}, headers=self._headers) as response:
                     remaining_requests = response.headers.get('X-RateLimit-Remaining')
-                    print(remaining_requests)
+                    logger.debug(f"Remaining requests {remaining_requests}")
                     response.raise_for_status()
                     data = await response.json()
                     return data
         except ServerDisconnectedError as e:
-            print(f"ServerDisconnectedError: {e}")
+            logger.warning(f"ServerDisconnectedError: {e}")
             raise
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.warning(f"An unexpected error occurred: {e}")
             raise
         
     async def _processing_data_from_fast_search_validator(self, data_need_to_distribute: List[EdgeData]):
@@ -125,7 +129,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, html_url,
                                                        path_to_poc_cve_object, type_of_the_directory=DirectoryType.POC_DIRECTORY)
             else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+                logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
         else:
             path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object)
@@ -133,7 +137,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 await self._working_with_extract_data(cve_id, pattern_of_cve_object_in_file, html_url,
                                                        path_to_poc_cve_object, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+                logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
 
     async def _get_all_topics_in_one_string(self, list_of_topics: List[Edge]) -> str:
         topic_list = [each_topic.node.topic.name for each_topic in list_of_topics]
@@ -168,7 +172,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     cve_id = os.path.splitext(file)[0]
                     cve_need_to_processing = await self._handle_cve_id(cve_id)
                     if cve_need_to_processing.need:
-                        print(cve_id)
+                        logger.debug(cve_id)
                         poc_object = await self._generate_poc_object(cve_file_path, cve_need_to_processing)
                         await process_of_distribute_poc(cve_id, poc_object,self._search_choice)
 
@@ -191,20 +195,21 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     items_from_api_answer = GraphQLAnswerModel(**data)
                     return CVEIDProcessing(items_from_api_answer.data.search.repositoryCount > 0, items_from_api_answer.data.search.edges)
         except ValidationError as e:
-                raise ValidationError(f"Validation error was occured {e}")
+                logger.warning(f"Validation error was occured in function handle cve id {e}")
+                raise ValidationError
         
     async def _wait_before_next_request(self, response: aiohttp.ClientResponse):
         limit = int(response.headers.get("X-RateLimit-Remaining", 0))
         reset_at_str = response.headers.get("X-RateLimit-Reset", "")
         DELTA = 3
-        print(limit)
+        logger.debug(f"Wait before next request function remaining {limit}")
         if not reset_at_str or limit <= datetime.now().year % 100:
             reset_at = datetime.utcnow()
             reset_at_unix_timestamp = int(reset_at_str)
             reset_at = datetime.utcfromtimestamp(reset_at_unix_timestamp)
             time_to_wait = max(0, (reset_at - datetime.utcnow()).total_seconds())                
             if time_to_wait > 0:
-                print(f"Rate limit exceeded, waiting for {time_to_wait} seconds.")
+                logger.debug(f"Rate limit exceeded, waiting for {time_to_wait} seconds.")
                 await asyncio.sleep(time_to_wait + DELTA)
         else:
             await asyncio.sleep(0.33)
@@ -219,10 +224,10 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     data = await response.json()
                     return data
         except ServerDisconnectedError as e:
-            print(f"ServerDisconnectedError: {e}")
+            logger.warning(f"ServerDisconnectedError: {e}")
             raise
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.warning(f"An unexpected error occurred: {e}")
             raise
                     
     async def _generate_poc_object(self,path_to_cve_file: str, cve_need_to_processing: CVEIDProcessing):
@@ -239,29 +244,28 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     data = await response.json()
                     remaining_requests = response.headers.get('X-RateLimit-Remaining')
                     total_requests = response.headers.get('X-RateLimit-Limit')
-                    print(f"Requests remaining: {remaining_requests}")
-                    print(f"Total requests allowed: {total_requests}")
+                    logger.debug(f"Requests remaining: {remaining_requests}")
+                    logger.debug(f"Total requests allowed: {total_requests}")
                     return data
         except aiohttp.ClientResponseError as e:
-            print(f"Error fetching data: {e}")
+            logger.warning(f"Error fetching data: {e}")
         except aiohttp.ClientError as e:
-            print(f"Client error: {e}")
+            logger.warning(f"Client error: {e}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.warning(f"An unexpected error occurred: {e}")
     
     async def _fast_search_by_github_api(self, intervals: List[StringInterval]):
         for i in range(0, len(intervals)):
             since, until = intervals[i].first_interval, intervals[i].second_interval
             new_url = self._special_url_for_update.format(since, until)
             pages_on_query = await how_many_pages_by_query(new_url, per_search=30)
-            #await self._process_each_page(new_url, 0)
             tasks = [self._process_each_page(new_url, page) for page in range(0, pages_on_query + 1)]
             await asyncio.gather(*tasks)
 
     async def _process_each_page(self, new_url: str, page: int):
         data = await return_data_from_query(url=new_url, headers=self._headers, page=page)
         if not data.get("items"):
-            print("I AM HERE", new_url)
+            logger.critical(f"Data that returns from function is empty by this url {new_url}")
             await asyncio.sleep(2)   
         if data.get("items"):
             for api_answer in data.get("items"):
@@ -304,7 +308,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, api_answer.get("html_url"),
                                                        path_to_poc_cve_object, type_of_the_directory=DirectoryType.POC_DIRECTORY)
             else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+                logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
         else:
             path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object)
@@ -312,19 +316,18 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 await self._working_with_extract_data(cve_id, pattern_of_cve_object_in_file, api_answer.get("html_url"),
                                                        path_to_poc_cve_object, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+                logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
         
     async def _working_with_extract_data(self, cve_id: str, pattern_of_some_objects: str, new_github_url: str, 
                                      path_to_new_poc_object: str, type_of_the_directory: DirectoryType):
-        print(f"Working in extract data {cve_id}", type_of_the_directory.name)
-        
+    
         description = await self._extract_description(pattern_of_some_objects)
         
         if not description:
             path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object, DirectoryType.CVE_DATABASE_DIRECTORY)
             if pattern_of_cve_object_in_file is None:
-                print(f"No data in the file or the file doesn't exist for CVE: {cve_id}")
+                logger.warning(f"No data in the file or the file doesn't exist for CVE: {cve_id}")
                 return
 
             description = await self._extract_description(pattern_of_cve_object_in_file)
