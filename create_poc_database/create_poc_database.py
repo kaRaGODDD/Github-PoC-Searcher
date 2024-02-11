@@ -14,7 +14,7 @@ load_dotenv()
 class POCDatabase(GithubManager):
 
     def __init__(self):
-        self._path_to_local_repository = "D:\python\cve_with_their_poc"#os.getenv("PATH_TO_THE_POC_DIRECTORY")
+        self._path_to_local_repository = os.getenv("PATH_TO_THE_POC_DIRECTORY")
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._user = Github(self._github_token).get_user()
 
