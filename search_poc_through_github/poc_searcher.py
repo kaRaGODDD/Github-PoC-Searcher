@@ -34,11 +34,11 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
         self._path_to_the_cve_database = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
-        self._url = "https://api.github.com/search/repositories?q={}"#os.getenv("GITHUB_API_URL")   
+        self._url = os.getenv("GITHUB_API_URL")   
         self._headers = {"Authorization": f"Bearer {self._github_token}"}
         self._search_choice = search_choice
         self._graphql_url = os.getenv("GITHUB_GRAPHQL_URL")
-        self._special_url_for_update = "https://api.github.com/search/repositories?q=cve%20created:{}..{}"#os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
+        self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search_by_traverse_directory(self, type_of_poc_searching: POCSearchType):
         while True:
@@ -64,7 +64,6 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
         await self._second_fast_search_by_github_api(query_intervals)
 
     async def _second_fast_search_by_github_api(self, intervals: List[StringInterval]):
-        #await self._process_each_page_v2(intervals[0])
         tasks = [(self._process_each_page_v2(intervals[i])) for i in range(0, len(intervals))]
         await asyncio.gather(*tasks)
  
@@ -75,7 +74,6 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
             await self._processing_data_from_fast_search_validator(distribution_data.data.search.edges)
         except ValidationError as e:
             print(e)
-                #raise ValidationError(f"Validation error was occured {e}")
     
     async def _get_data_for_fast_search(self, string_date_interval: StringInterval):
         try:
@@ -111,8 +109,12 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
         
     async def _process_each_cve_id_v2(self, lst_of_cve_ids: List[str], repository_html_url: str):
         for cve_id in lst_of_cve_ids:
-            await self._process_each_cve_id_from_different_sources_v2(cve_id, repository_html_url)
+            if await self._is_valid(cve_id):
+                await self._process_each_cve_id_from_different_sources_v2(cve_id, repository_html_url)
         
+    async def _is_valid(self, cve_id: str):
+        return 1999 <= int(cve_id.split("-")[1]) <= datetime.now().year
+
     async def _process_each_cve_id_from_different_sources_v2(self, cve_id: str, html_url: str):
         pattern_of_cve_object_in_file = None
         pattern_of_poc_object_in_file = None
@@ -222,7 +224,6 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             raise
-
                     
     async def _generate_poc_object(self,path_to_cve_file: str, cve_need_to_processing: CVEIDProcessing):
         content_from_file = await read_file_by_path(path_to_cve_file)
@@ -263,7 +264,6 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
             print("I AM HERE", new_url)
             await asyncio.sleep(2)   
         if data.get("items"):
-            #TODO sleep and in working github api тоже sleep добавил надо проверить потом будет их на работоспособность
             for api_answer in data.get("items"):
                 cve_ids_from_repository_name = await self._extract_cve_ids(api_answer.get("name"))
                 cve_ids_from_repository_description = await self._extract_cve_ids(api_answer.get("description"))
@@ -336,7 +336,8 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     all_references.append(new_github_url)
                     cve_model = POCModel(description, all_references)
                     await write_poc_with_full_path(cve_id, cve_model, path_to_new_poc_object, POCSearchMethod.GITHUB_API_SEARCH)
-                return
+                else:
+                    return
             case DirectoryType.CVE_DATABASE_DIRECTORY:
                 if description:
                     new_poc_object = POCObject(description[0], new_github_url)
@@ -350,7 +351,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
     async def _extract_all_references(self, cve_object: str) -> List[str]:
         return re.findall(r'(https://[0-9*?:;№"@!?><a-zA-z./-]+)', cve_object)
 
-    async def _extract_description(self,content_from_file: str) -> str:
+    async def _extract_description(self,content_from_file: str) -> List[str]:
         return re.findall("`(.+?)`", content_from_file)
     
     async def _extract_cve_ids(self, field_with_possible_cve_id: str) -> List[str]:
@@ -365,6 +366,6 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
 
 async def main():
     a = GithubPOCSearcher()
-    await a.fast_search_v2(StringInterval("2013-01-01", "2014-01-01"))    
+    await a.fast_search_v2(StringInterval("2022-01-01", "2022-06-01"))    
 
 asyncio.run(main())
