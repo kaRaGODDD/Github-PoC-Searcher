@@ -19,7 +19,7 @@ async def _split_interval_by_parts(interval: StringInterval) -> List[StringInter
     current_date, end_date = await _return_components(new_interval)
     dates = []
     while current_date < end_date:
-        next_month = min(current_date + relativedelta(months=1),end_date)
+        next_month = min(current_date + relativedelta(days=1),end_date)
         string_interval_object = StringInterval(current_date.strftime("%Y-%m-%d"),next_month.strftime("%Y-%m-%d"))
         dates.append(string_interval_object)
         current_date = next_month
