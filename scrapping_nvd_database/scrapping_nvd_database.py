@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from typing import List, Optional, Union
+from loguru import logger
 
 from file_manager.distribution_of_objects import process_and_distribute_cve
 from file_manager.write_last_scrapping_date import write_last_date_scraping
@@ -18,6 +19,9 @@ from constants_and_other_stuff.enums import FileFormat, ScrapingType
 
 
 load_dotenv()
+
+logger.add('logs/NVD.log', rotation="8:00", level="DEBUG", compression="zip")
+
 
 class NVDScraper:
     def __init__(self, string_interval: StringInterval = StringInterval("2013-01-01", "2014-01-01"), 
@@ -34,7 +38,7 @@ class NVDScraper:
                 await write_last_date_scraping("LAST_SCRAPPING_DATE_OF_NVD")
             await self._handle_intervals(type_of_scraping)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.warning(f"An unexpected error occurred in function start scraping {e}")
 
     async def update(self,rewrite_last_date_scrapping: bool=False, last_date_scrapping: str="2024-01-01"):
         try:
@@ -44,7 +48,7 @@ class NVDScraper:
             await self.set_interval(StringInterval(last_date_scrapping, current_date_scrapping))
             await self.start_scraping(rewrite_last_date_scrapping, type_of_scraping=ScrapingType.UPDATE)
         except Exception as e:
-            print(f"An unexpected error occurred method update: {e}")
+            logger.warning(f"An unexpected error occurred in function update {e}")
 
     async def set_interval(self, new_string_interval: StringInterval):
         self.string_interval = new_string_interval
@@ -64,7 +68,7 @@ class NVDScraper:
                                               interval) for interval in intervals]
             await asyncio.gather(*tasks)
         except Exception as e:
-            print(f"An unexpected error occurred handle intervals: {e}")
+            logger.warning(f"An unexpected error occurred handle intervals: {e}")
 
     async def _handle_api_request(self, url: str, string_interval: StringInterval):
         try:
@@ -75,14 +79,14 @@ class NVDScraper:
                 case FileFormat.JSON:
                     await self._handle_data(data.get("vulnerabilities", {}),data)
         except Exception as e:
-            print(f"An unexpected error occurred method handle_api request: {e}", url)
+            logger.warning(f"An unexpected error occurred method handle_api request: {e}", url)
 
     async def _handle_data(self, data: List[dict], json_answer: Optional[dict]={}):
         for cve_info in data:
             try:
                 cve_exploit = CveExploit(**cve_info.get('cve', {}))
             except ValidationError as e:
-                print("Exception", e.json())
+                logger.error("Exception was occured while function handle data try to validate data", e.json())
             match self._file_format:
                 case FileFormat.MD:
                     await process_and_distribute_cve(cve_exploit,self._file_format)
@@ -97,15 +101,15 @@ class NVDScraper:
                     data = await response.json()
             return data
         except aiohttp.ClientResponseError as e:
-            print(f"Error fetching data: {e}", url)
+            logger.error(f"Error fetching data: {e}", url)
         except aiohttp.ClientError as e:
-            print(f"Client error: {e}", url)
+            logger.error(f"Client error: {e}", url)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}", url)
+            logger.error(f"An unexpected error occurred: {e}", url)
 
 
 async def main():
-    a = NVDScraper(StringInterval("2003-01-01","2006-01-01"))
+    a = NVDScraper(StringInterval("2024-02-01","2024-02-12"))
     await a.start_scraping()
 
 asyncio.run(main())
