@@ -29,7 +29,7 @@ from constants_and_other_stuff.constants import GRAPHQL_QUERY, GRAPHQL_QUERY_FOR
 
 load_dotenv()
 
-logger.add('logs/log.log', rotation="10 mb", level="DEBUG")
+logger.add('logs/log.log', rotation="10 mb", level="DEBUG", compression="zip")
 
 
 class GithubPOCSearcher:
@@ -150,8 +150,7 @@ class GithubPOCSearcher:
         
     async def update(self, rewrite_last_date_scrapping: bool=False):
         new_string_interval = await return_last_current_intervals_for_poc_update()
-        query_intervals = await create_intervals(new_string_interval)
-        await self._fast_search_by_github_api(query_intervals)
+        await self.fast_search_v2(new_string_interval)
 
     async def _traverse_cve_database_all_directories_at_once(self):
         tasks = [
@@ -369,6 +368,6 @@ class GithubPOCSearcher:
 
 async def main():
     a = GithubPOCSearcher()
-    await a.fast_search_v2(StringInterval("2022-01-01", "2022-06-01"))    
+    await a.update()    
 
 asyncio.run(main())
