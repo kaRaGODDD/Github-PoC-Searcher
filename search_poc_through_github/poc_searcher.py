@@ -29,7 +29,7 @@ from constants_and_other_stuff.constants import GRAPHQL_QUERY, GRAPHQL_QUERY_FOR
 
 load_dotenv()
 
-logger.add('logs/log.log', rotation="10 mb", level="DEBUG", compression="zip")
+logger.add('logs/github_searcher.log', rotation="8:00", level="DEBUG", compression="zip")
 
 
 class GithubPOCSearcher:
