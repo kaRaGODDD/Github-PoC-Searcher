@@ -4,9 +4,12 @@ import subprocess
 
 from datetime import datetime
 from dotenv import load_dotenv
+
 from github import Github
+
 from github_manager.personal_github_manager import GithubManager
 from scrapping_nvd_database.scrapping_nvd_database import NVDScraper
+from search_poc_through_github.poc_searcher import GithubPOCSearcher
 
 
 load_dotenv()
@@ -70,14 +73,9 @@ class POCDatabase(GithubManager):
             print(f"Error pushing changes to 'dev': {e}")
 
     async def update_database(self, rewrite_last_date: bool=True):
-        """Update the database."""
-        ...
+        instance_of_poc_searcher = GithubPOCSearcher()
+        await instance_of_poc_searcher.update()
+        await self.add_in_index()
+        await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d')}")
+        await self.push_changes_to_server()
         
-async def main():
-    a = POCDatabase()
-    await a.create_repository("CVE with their PoC`s", private=True)
-    await a.add_in_index()
-    await a.make_a_commit("init")
-    await a.push_changes_to_server()
-
-asyncio.run(main())
