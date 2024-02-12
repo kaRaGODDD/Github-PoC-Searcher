@@ -33,7 +33,23 @@ logger.add('logs/github_searcher.log', rotation="8:00", level="DEBUG", compressi
 
 
 class GithubPOCSearcher:
-    '''Class represent PoC search in github'''
+    '''This class represents a PoC (Proof of Concept) searcher in GitHub. 
+    It is designed to search for PoCs related to CVE (Common Vulnerabilities and Exposures) entries.
+    The primary goals include:
+    - Searching for PoCs using either GitHub API or GraphQL.
+    - Distributing PoCs into appropriate directories based on CVE information.
+    - Updating PoCs with new data intervals.
+
+    Attributes:
+    - _github_token (str): GitHub token for API authentication.
+    - _name_of_the_poc_directory (str): Name of the directory where PoCs are stored.
+    - _path_to_the_cve_database (str): Path to the directory containing CVE database.
+    - _url (str): Base URL for GitHub API.
+    - _headers (dict): HTTP headers with authorization information.
+    - _search_choice (POCSearchMethod): Search method, either GitHub API or GraphQL.
+    - _graphql_url (str): URL for GitHub GraphQL API.
+    - _special_url_for_update (str): Special URL for updating PoCs.
+    '''
     def __init__(self,search_choice: POCSearchMethod = POCSearchMethod.GRAPHQL_SEARCH):
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
@@ -45,6 +61,7 @@ class GithubPOCSearcher:
         self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search_by_traverse_directory(self, type_of_poc_searching: POCSearchType):
+        '''Starts the PoC search by traversing the CVE database directories.'''
         while True:
             try:
                 match type_of_poc_searching:
@@ -64,17 +81,17 @@ class GithubPOCSearcher:
                 break 
     
     async def start_search(self, string_interval: StringInterval):
-        '''Alternative search poc`s throught github with help of Graphql'''
+        '''Alternative search PoCs through GitHub with the help of GraphQL.'''
         query_intervals = await create_intervals(string_interval)
         await self._generate_pages_for_request(query_intervals)
 
     async def _generate_pages_for_request(self, intervals: List[StringInterval]):
-        '''Handle each interval from list'''
+        '''Handles each interval from the list.'''
         tasks = [(self._process_each_page(intervals[i])) for i in range(0, len(intervals))]
         await asyncio.gather(*tasks)
  
     async def _process_each_page(self, string_date_interval: StringInterval):
-        '''Puprose to handle data from request'''
+        '''Handles data from the request.'''
         try:
             data = await self._get_data_for_fast_search(string_date_interval)
             distribution_data = FastSearchValidator(**data)
@@ -83,7 +100,7 @@ class GithubPOCSearcher:
             logger.warning(f"Validation error of second version of process page {e}")
     
     async def _get_data_for_fast_search(self, string_date_interval: StringInterval):
-        '''For second version of fast search to make a post request'''
+        '''For search make a post request'''
         try:
             query = GRAPHQL_QUERY_FOR_FAST_INTERVAL_SEACH.format(string_date_interval.first_interval, string_date_interval.second_interval)
             async with aiohttp.ClientSession() as session:
@@ -101,33 +118,33 @@ class GithubPOCSearcher:
             raise
         
     async def _processing_data_from_fast_search_validator(self, data_need_to_distribute: List[RepositoryContent]):
-        '''Purpose to distribute the cve'''
+        '''Distributes the CVEs.'''
         for value in data_need_to_distribute:
             cve_ids_from_repository_name = await self._extract_cve_ids(value.node.name)
             cve_ids_from_repository_description = await self._extract_cve_ids(value.node.description)
             if cve_ids_from_repository_name:
-                await self._process_each_cve_id_v2(cve_ids_from_repository_name, value.node.url)
+                await self._process_each_cve_id(cve_ids_from_repository_name, value.node.url)
             elif cve_ids_from_repository_description:
-                await self._process_each_cve_id_v2(cve_ids_from_repository_description, value.node.url)
+                await self._process_each_cve_id(cve_ids_from_repository_description, value.node.url)
             else:
                 combine_all_topics = await self._get_all_topics_in_one_string(value.node.repositoryTopics.edges)
                 if combine_all_topics:
                     cve_ids_from_repository_topics = await self._extract_cve_ids(combine_all_topics)
                     if cve_ids_from_repository_topics:
-                        await self._process_each_cve_id_v2(cve_ids_from_repository_topics, value.node.url)
+                        await self._process_each_cve_id(cve_ids_from_repository_topics, value.node.url)
         
-    async def _process_each_cve_id_v2(self, lst_of_cve_ids: List[str], repository_html_url: str):
-        '''Send each cve to handler'''
+    async def _process_each_cve_id(self, lst_of_cve_ids: List[str], repository_html_url: str):
+        '''Sends each CVE to the handler.'''
         for cve_id in lst_of_cve_ids:
             if await self._is_valid(cve_id):
-                await self._process_each_cve_id_from_different_sources_v2(cve_id, repository_html_url)
+                await self._process_each_cve_id_from_different_sources(cve_id, repository_html_url)
         
     async def _is_valid(self, cve_id: str):
-        '''Check the valid of cve id'''
+        '''Checks the validity of the CVE ID.'''
         return 1999 <= int(cve_id.split("-")[1]) <= datetime.now().year
 
-    async def _process_each_cve_id_from_different_sources_v2(self, cve_id: str, html_url: str):
-        '''Prepairing data for each cve to '''
+    async def _process_each_cve_id_from_different_sources(self, cve_id: str, html_url: str):
+        '''Prepares data for each CVE.'''
         pattern_of_cve_object_in_file = None
         pattern_of_poc_object_in_file = None
         path_to_poc_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.POC_DIRECTORY)
@@ -148,15 +165,18 @@ class GithubPOCSearcher:
                 logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
 
     async def _get_all_topics_in_one_string(self, list_of_topics: List[TopicContent]) -> str:
+        '''Gets all topics in a single string.'''
         topic_list = [each_topic.node.topic.name for each_topic in list_of_topics]
         topic_string = " ".join(topic_list)
         return topic_string
         
     async def update(self, rewrite_last_date_scrapping: bool=False):
+        '''Updates PoCs with new data intervals.'''
         new_string_interval = await return_last_current_intervals_for_poc_update()
         await self.start_search(new_string_interval)
 
     async def _traverse_cve_database_all_directories_at_once(self):
+        '''Traverses the entire CVE database in all directories at once.'''
         tasks = [
             self._traverse_cve_database_on_pc_by_path(os.getenv("PATH_TO_CVE_YEAR_DIRECTORY").format(year))
             for year in range(1999, datetime.now().year + 1)
@@ -164,6 +184,7 @@ class GithubPOCSearcher:
         await asyncio.gather(*tasks)
 
     async def _traverse_cve_database_on_pc_by_path(self, path: str):
+        '''Traverses the CVE database on the PC by the specified path.'''
         for root, dirs, files in os.walk(path):
             if '.git' in dirs:
                 dirs.remove('.git')
@@ -178,8 +199,9 @@ class GithubPOCSearcher:
                         logger.debug(cve_id)
                         poc_object = await self._generate_poc_object(cve_file_path, cve_need_to_processing)
                         await process_of_distribute_poc(cve_id, poc_object,self._search_choice)
-
+ 
     async def _prepare_for_fix_year_scrapping(self) -> str:
+        '''Prepares for fixing the year scraping.'''
         print("Please input year ")
         year = input()
         if int(year) > datetime.now().year:
@@ -187,6 +209,7 @@ class GithubPOCSearcher:
         return year
 
     async def _handle_cve_id(self, cve_id: str) -> CVEIDProcessing:
+        '''Handles the CVE ID and returns processing information.'''
         try:
             match self._search_choice:
                 case POCSearchMethod.GITHUB_API_SEARCH:
@@ -202,6 +225,7 @@ class GithubPOCSearcher:
                 raise ValidationError
         
     async def _wait_before_next_request(self, response: aiohttp.ClientResponse):
+        '''Waits before the next API request based on rate limit information.'''
         limit = int(response.headers.get("X-RateLimit-Remaining", 0))
         reset_at_str = response.headers.get("X-RateLimit-Reset", "")
         DELTA = 3
@@ -218,6 +242,7 @@ class GithubPOCSearcher:
             await asyncio.sleep(0.33)
 
     async def _create_post_request_on_cve_id_grapql_method(self, cve_id: str) -> dict:
+        '''Creates a POST request on the CVE ID using the GraphQL method.'''
         try:
             query = GRAPHQL_QUERY.format(cve_id)
             async with aiohttp.ClientSession() as session:
@@ -234,11 +259,13 @@ class GithubPOCSearcher:
             raise
                     
     async def _generate_poc_object(self,path_to_cve_file: str, cve_need_to_processing: CVEIDProcessing):
+        '''Generates a PoC object based on the path to the CVE file and processing information.'''
         content_from_file = await read_file_by_path(path_to_cve_file)
         description = await self._extract_description(content_from_file)
         return POCModel(description, cve_need_to_processing.github_urls)
     
     async def _create_request_on_cve_id(self, cve_id: str) -> dict:
+        '''Creates a GET request on the CVE ID using the GitHub API.'''
         try:        
             async with aiohttp.ClientSession() as session:
                 async with session.get(self._url.format(cve_id), headers=self._headers) as response:
@@ -259,7 +286,7 @@ class GithubPOCSearcher:
         
     async def _working_with_extract_data(self, cve_id: str, pattern_of_some_objects: str, new_github_url: str, 
                                      path_to_new_poc_object: str, type_of_the_directory: DirectoryType):
-        '''Get data for cve: description, urls, name'''
+        '''Gets data for the CVE: description, URLs, name.'''
         description = await self._extract_description(pattern_of_some_objects)
         
         if not description:
