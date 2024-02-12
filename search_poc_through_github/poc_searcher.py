@@ -17,6 +17,7 @@ from file_manager.write_file_by_poc_pattern import write_poc_with_full_path, wri
 from file_manager.process_of_distribution_poc import process_of_distribute_poc
 from file_manager.distribution_of_objects import return_location_of_cve_object
 from file_manager.read_files import read_file_by_path
+from file_manager.write_last_scrapping_date import write_last_date_scraping
 
 from working_with_API.working_with_github_API import how_many_pages_by_query, return_data_from_query
 
@@ -173,6 +174,8 @@ class GithubPOCSearcher:
     async def update(self, rewrite_last_date_scrapping: bool=False):
         '''Updates PoCs with new data intervals.'''
         new_string_interval = await return_last_current_intervals_for_poc_update()
+        if rewrite_last_date_scrapping:
+            await write_last_date_scraping("LAST_DATE_SCRAPPING_POC_UPDATE")
         await self.start_search(new_string_interval)
 
     async def _traverse_cve_database_all_directories_at_once(self):
@@ -335,6 +338,6 @@ class GithubPOCSearcher:
 
 async def main():
     a = GithubPOCSearcher()
-    await a.start_search(StringInterval("2024-01-01", "2024-02-12"))  
+    await a.update()
 
 asyncio.run(main())
