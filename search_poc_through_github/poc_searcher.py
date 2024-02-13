@@ -335,9 +335,3 @@ class GithubPOCSearcher:
                 cve_ids.append(cve_id)
             return cve_ids
         return []
-
-async def main():
-    a = GithubPOCSearcher()
-    await a.update()
-
-asyncio.run(main())
