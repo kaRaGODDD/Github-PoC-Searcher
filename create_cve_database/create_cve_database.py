@@ -5,6 +5,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 from github import Github
+from loguru import logger
 
 from github_manager.personal_github_manager import GithubManager
 from scrapping_nvd_database.scrapping_nvd_database import NVDScraper
@@ -13,9 +14,19 @@ from constants_and_other_stuff.enums import FileFormat
 
 load_dotenv()
 
+logger.add('logs/CVEDatabase.log', rotation="8:00", level="DEBUG", compression="zip")
+
+
 class CVEDatabase(GithubManager):
 
     def __init__(self):
+        required_env_variables = ["PATH_TO_THE_DATA_DIRECTORY", "GITHUB_TOKEN"]
+        missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
+
+        if missing_env_variables:
+            logger.critical(f"Critical error: Missing required environment variables for CVEDatabase: {', '.join(missing_env_variables)}")
+            raise Exception(f"Critical error: Missing required environment variables for CVEDatabase: {', '.join(missing_env_variables)}")
+            
         self._path_to_local_repository = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._user = Github(self._github_token).get_user()
