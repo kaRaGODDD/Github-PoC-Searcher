@@ -28,7 +28,7 @@ class NVDScraper:
                  file_format: FileFormat = FileFormat.MD):
         self.string_interval = string_interval
         self._file_format = file_format
-        self._url = os.getenv("NVD_API_URL")  
+        self._url = "https://services.nvd.nist.gov/rest/json/cves/2.0/?pubStartDate={}&pubEndDate={}"#os.getenv("NVD_API_URL")  
         self._nvd_api_key = os.getenv("NVD_API_KEY")
         self._headers = {'apiKey':self._nvd_api_key}
 
@@ -106,10 +106,3 @@ class NVDScraper:
             logger.error(f"Client error: {e}", url)
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}", url)
-
-
-async def main():
-    a = NVDScraper(StringInterval("2024-02-01","2024-02-12"))
-    await a.start_scraping()
-
-asyncio.run(main())
