@@ -46,6 +46,8 @@ class POCDatabase(GithubManager):
             self.set_repository_name(name_of_the_repository)
             self.set_user_login(self._user.login)
             self.set_repository_instance(private)
+            os.chdir(self._path_to_local_repository)
+            subprocess.run(["git","init"])
         except Exception as e:
             e.add_note(f"Repository {name_of_the_repository} already created")
 
@@ -76,6 +78,6 @@ class POCDatabase(GithubManager):
         instance_of_poc_searcher = GithubPOCSearcher()
         await instance_of_poc_searcher.update()
         await self.add_in_index()
-        await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d')}")
+        await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H-%M-%S')}")
         await self.push_changes_to_server()
         
