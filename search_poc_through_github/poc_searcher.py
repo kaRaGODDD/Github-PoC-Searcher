@@ -52,6 +52,13 @@ class GithubPOCSearcher:
     - _special_url_for_update (str): Special URL for updating PoCs.
     '''
     def __init__(self,search_choice: POCSearchMethod = POCSearchMethod.GRAPHQL_SEARCH):
+        required_env_variables = ["GITHUB_TOKEN", "NAME_OF_THE_POC_DIRECTORY", "PATH_TO_THE_DATA_DIRECTORY", "GITHUB_API_URL", "GITHUB_GRAPHQL_URL", "GITHUB_SPECIAL_URL_FOR_UPDATE"]
+        missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
+
+        if missing_env_variables:
+            logger.critical(f"Critical error: Missing required environment variables: {', '.join(missing_env_variables)}")
+            raise Exception(f"Critical error was found that parameters are not set, please set them {missing_env_variables}")
+        
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
         self._path_to_the_cve_database = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
