@@ -82,7 +82,7 @@ class CVEDatabase(GithubManager):
             print(f"Error pushing changes to 'dev': {e}")
 
     async def update_database(self, rewrite_last_date: bool=True):
-        nvd_instance = NVDScraper(file_saving=FileFormat.JSON)
+        nvd_instance = NVDScraper()
         await nvd_instance.update(rewrite_last_date)
         await self.add_in_index() 
         await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
