@@ -4,16 +4,29 @@ import subprocess
 
 from datetime import datetime
 from dotenv import load_dotenv
+
 from github import Github
+from loguru import logger
+
 from github_manager.personal_github_manager import GithubManager
 from scrapping_nvd_database.scrapping_nvd_database import NVDScraper
+from search_poc_through_github.poc_searcher import GithubPOCSearcher
 
 
 load_dotenv()
 
-class POCDatabase(GithubManager):
+logger.add('logs/POCDatabase.log', rotation="8:00", level="DEBUG", compression="zip")
 
+
+class POCDatabase(GithubManager):
     def __init__(self):
+        required_env_variables = ["PATH_TO_THE_POC_DIRECTORY", "GITHUB_TOKEN"]
+        missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
+
+        if missing_env_variables:
+            logger.critical(f"Critical error: Missing required environment variables for POCDatabase: {', '.join(missing_env_variables)}")
+            raise Exception(f"Critical error: Missing required environment variables POCDatabase: {', '.join(missing_env_variables)}")
+
         self._path_to_local_repository = os.getenv("PATH_TO_THE_POC_DIRECTORY")
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._user = Github(self._github_token).get_user()
@@ -43,6 +56,8 @@ class POCDatabase(GithubManager):
             self.set_repository_name(name_of_the_repository)
             self.set_user_login(self._user.login)
             self.set_repository_instance(private)
+            os.chdir(self._path_to_local_repository)
+            subprocess.run(["git","init"])
         except Exception as e:
             e.add_note(f"Repository {name_of_the_repository} already created")
 
@@ -70,14 +85,9 @@ class POCDatabase(GithubManager):
             print(f"Error pushing changes to 'dev': {e}")
 
     async def update_database(self, rewrite_last_date: bool=True):
-        """Update the database."""
-        ...
+        instance_of_poc_searcher = GithubPOCSearcher()
+        await instance_of_poc_searcher.update(rewrite_last_date)
+        await self.add_in_index()   
+        await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        await self.push_changes_to_server()
         
-async def main():
-    a = POCDatabase()
-    await a.create_repository("CVE with their PoC`s", private=True)
-    await a.add_in_index()
-    await a.make_a_commit("init")
-    await a.push_changes_to_server()
-
-asyncio.run(main())

@@ -21,8 +21,7 @@ async def process_of_distribute_poc(cve_id: str, poc_object: POCModel, search_ch
 
 async def _create_yearly_directories(cve_object: CveIDComponents):
     await create_directory(os.getenv("NAME_OF_THE_POC_DIRECTORY"), os.getenv("PATH_TO_THE_BASE_DIRECTORY"))
-    if 1999 <= cve_object.cve_year <= datetime.now().year:
-        await create_directory(cve_object.cve_year, os.getenv("PATH_TO_THE_POC_DIRECTORY"))
+    await create_directory(cve_object.cve_year, os.getenv("PATH_TO_THE_POC_DIRECTORY"))
 
 async def _create_id_based_directory(cve_object: CveIDComponents) -> str:
     determine_folder_name_by_formula = await _generate_folder_name(cve_object)

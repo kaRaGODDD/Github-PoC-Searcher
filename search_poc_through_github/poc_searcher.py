@@ -4,23 +4,25 @@ import os
 import re
 
 from aiohttp import ServerDisconnectedError
-from pydantic import ValidationError
 from datetime import datetime
 from dotenv import load_dotenv
+from pydantic import ValidationError
+from loguru import logger
 from typing import List
 
 from datetime_manager.create_datetime_intervals import create_intervals
-from datetime_manager.return_last_date_and_current import return_last_current_intervals_for_poc_update
+from datetime_manager.return_last_date_and_current import return_last_and_current_intervals_for_poc_update
 
 from file_manager.write_file_by_poc_pattern import write_poc_with_full_path, write_new_poc_object
 from file_manager.process_of_distribution_poc import process_of_distribute_poc
 from file_manager.distribution_of_objects import return_location_of_cve_object
 from file_manager.read_files import read_file_by_path
+from file_manager.write_last_scrapping_date import write_last_date_scraping
 
 from working_with_API.working_with_github_API import how_many_pages_by_query, return_data_from_query
 
 from constants_and_other_stuff.returning_values import return_github_api_url
-from constants_and_other_stuff.pydantic_models import UrlFromResponse, GraphQLAnswerModel, FastSearchValidator, EdgeData, Edge
+from constants_and_other_stuff.pydantic_models import UrlFromResponse, GraphQLAnswerModel, FastSearchValidator, RepositoryContent, TopicContent
 from constants_and_other_stuff.structs import POCModel, CVEIDProcessing, StringInterval, POCObject, POCModel
 from constants_and_other_stuff.enums import POCSearchMethod, DirectoryType, POCSearchType, CveIDFromDifferentSources
 from constants_and_other_stuff.constants import GRAPHQL_QUERY, GRAPHQL_QUERY_FOR_FAST_INTERVAL_SEACH
@@ -28,9 +30,35 @@ from constants_and_other_stuff.constants import GRAPHQL_QUERY, GRAPHQL_QUERY_FOR
 
 load_dotenv()
 
-class GithubPOCSearcher: #Переименовать в github poc searcher
-    '''Class represent PoC search in github'''
+logger.add('logs/github_searcher.log', rotation="8:00", level="DEBUG", compression="zip")
+
+
+class GithubPOCSearcher:
+    '''This class represents a PoC (Proof of Concept) searcher in GitHub. 
+    It is designed to search for PoCs related to CVE (Common Vulnerabilities and Exposures) entries.
+    The primary goals include:
+    - Searching for PoCs using either GitHub API or GraphQL.
+    - Distributing PoCs into appropriate directories based on CVE information.
+    - Updating PoCs with new data intervals.
+
+    Attributes:
+    - _github_token (str): GitHub token for API authentication.
+    - _name_of_the_poc_directory (str): Name of the directory where PoCs are stored.
+    - _path_to_the_cve_database (str): Path to the directory containing CVE database.
+    - _url (str): Base URL for GitHub API.
+    - _headers (dict): HTTP headers with authorization information.
+    - _search_choice (POCSearchMethod): Search method, either GitHub API or GraphQL.
+    - _graphql_url (str): URL for GitHub GraphQL API.
+    - _special_url_for_update (str): Special URL for updating PoCs.
+    '''
     def __init__(self,search_choice: POCSearchMethod = POCSearchMethod.GRAPHQL_SEARCH):
+        required_env_variables = ["GITHUB_TOKEN", "NAME_OF_THE_POC_DIRECTORY", "PATH_TO_THE_DATA_DIRECTORY", "GITHUB_API_URL", "GITHUB_GRAPHQL_URL", "GITHUB_SPECIAL_URL_FOR_UPDATE"]
+        missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
+
+        if missing_env_variables:
+            logger.critical(f"Critical error: Missing required environment variables for GithubPOCSearcher: {', '.join(missing_env_variables)}")
+            raise Exception(f"Critical error: Missing required environment variables for GithubPOCSearcher: {', '.join(missing_env_variables)}")
+        
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
         self._path_to_the_cve_database = os.getenv("PATH_TO_THE_DATA_DIRECTORY")
@@ -41,6 +69,26 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
         self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search_by_traverse_directory(self, type_of_poc_searching: POCSearchType):
+        '''Starts the PoC search by traversing the CVE database directories.
+
+        Args:
+            type_of_poc_searching (POCSearchType): Enum indicating the type of PoC search to perform.
+
+        POCSearchType:
+            - TRAVERSE_ALL_CVE_DIRECTORIES_CONSISTENTLY: Traverse all CVE directories consistently.
+            - TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY: Traverse directories based on the fixed year.
+            - TRAVERSE_ALL_DIRECTORIES_AT_ONCE: Traverse all directories at once.
+
+        Raises:
+            ServerDisconnectedError: Raised if there is a server disconnection during the traversal.
+
+        Notes:
+            - For TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY, the method expects a valid environment variable "PATH_TO_CVE_YEAR_DIRECTORY"
+            indicating the base path to CVE directories for a specific year.
+
+        Returns:
+            None
+        '''
         while True:
             try:
                 match type_of_poc_searching:
@@ -52,70 +100,78 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     case POCSearchType.TRAVERSE_ALL_DIRECTORIES_AT_ONCE:
                         await self._traverse_cve_database_all_directories_at_once()
             except Exception as e:
-                print(f"ServerDisconnectedError: {e}")
-                print("Reconnecting...")
+                logger.warning(f"ServerDisconnectedError: {e}")
+                logger.warning("Reconnecting...")
                 await asyncio.sleep(5)
                 continue
             else:
-                break 
-    
-    async def fast_search_v2(self, string_interval: StringInterval):
-        query_intervals = await create_intervals(string_interval)
-        await self._second_fast_search_by_github_api(query_intervals)
+                break
 
-    async def _second_fast_search_by_github_api(self, intervals: List[StringInterval]):
-        tasks = [(self._process_each_page_v2(intervals[i])) for i in range(0, len(intervals))]
+    async def start_search(self, string_interval: StringInterval):
+        '''Alternative search PoCs through GitHub with the help of GraphQL.'''
+        query_intervals = await create_intervals(string_interval)
+        await self._generate_pages_for_request(query_intervals)
+
+    async def _generate_pages_for_request(self, intervals: List[StringInterval]):
+        '''Handles each interval from the list.'''
+        tasks = [(self._process_each_page(intervals[i])) for i in range(0, len(intervals))]
         await asyncio.gather(*tasks)
  
-    async def _process_each_page_v2(self, string_date_interval: StringInterval):
+    async def _process_each_page(self, string_date_interval: StringInterval):
+        '''Handles data from the request.'''
         try:
             data = await self._get_data_for_fast_search(string_date_interval)
             distribution_data = FastSearchValidator(**data)
             await self._processing_data_from_fast_search_validator(distribution_data.data.search.edges)
         except ValidationError as e:
-            print(e)
+            logger.warning(f"Validation error of second version of process page {e}")
     
     async def _get_data_for_fast_search(self, string_date_interval: StringInterval):
+        '''For search make a post request'''
         try:
             query = GRAPHQL_QUERY_FOR_FAST_INTERVAL_SEACH.format(string_date_interval.first_interval, string_date_interval.second_interval)
             async with aiohttp.ClientSession() as session:
                 async with session.post(url=self._graphql_url, json={"query": query}, headers=self._headers) as response:
                     remaining_requests = response.headers.get('X-RateLimit-Remaining')
-                    print(remaining_requests)
+                    logger.debug(f"Remaining requests {remaining_requests}")
                     response.raise_for_status()
                     data = await response.json()
                     return data
         except ServerDisconnectedError as e:
-            print(f"ServerDisconnectedError: {e}")
+            logger.warning(f"ServerDisconnectedError: {e}")
             raise
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.warning(f"An unexpected error occurred: {e}")
             raise
         
-    async def _processing_data_from_fast_search_validator(self, data_need_to_distribute: List[EdgeData]):
+    async def _processing_data_from_fast_search_validator(self, data_need_to_distribute: List[RepositoryContent]):
+        '''Distributes the CVEs.'''
         for value in data_need_to_distribute:
             cve_ids_from_repository_name = await self._extract_cve_ids(value.node.name)
             cve_ids_from_repository_description = await self._extract_cve_ids(value.node.description)
             if cve_ids_from_repository_name:
-                await self._process_each_cve_id_v2(cve_ids_from_repository_name, value.node.url)
+                await self._process_each_cve_id(cve_ids_from_repository_name, value.node.url)
             elif cve_ids_from_repository_description:
-                await self._process_each_cve_id_v2(cve_ids_from_repository_description, value.node.url)
+                await self._process_each_cve_id(cve_ids_from_repository_description, value.node.url)
             else:
                 combine_all_topics = await self._get_all_topics_in_one_string(value.node.repositoryTopics.edges)
                 if combine_all_topics:
                     cve_ids_from_repository_topics = await self._extract_cve_ids(combine_all_topics)
                     if cve_ids_from_repository_topics:
-                        await self._process_each_cve_id_v2(cve_ids_from_repository_topics, value.node.url)
+                        await self._process_each_cve_id(cve_ids_from_repository_topics, value.node.url)
         
-    async def _process_each_cve_id_v2(self, lst_of_cve_ids: List[str], repository_html_url: str):
+    async def _process_each_cve_id(self, lst_of_cve_ids: List[str], repository_html_url: str):
+        '''Sends each CVE to the handler.'''
         for cve_id in lst_of_cve_ids:
             if await self._is_valid(cve_id):
-                await self._process_each_cve_id_from_different_sources_v2(cve_id, repository_html_url)
+                await self._process_each_cve_id_from_different_sources(cve_id, repository_html_url)
         
     async def _is_valid(self, cve_id: str):
+        '''Checks the validity of the CVE ID.'''
         return 1999 <= int(cve_id.split("-")[1]) <= datetime.now().year
 
-    async def _process_each_cve_id_from_different_sources_v2(self, cve_id: str, html_url: str):
+    async def _process_each_cve_id_from_different_sources(self, cve_id: str, html_url: str):
+        '''Prepares data for each CVE.'''
         pattern_of_cve_object_in_file = None
         pattern_of_poc_object_in_file = None
         path_to_poc_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.POC_DIRECTORY)
@@ -125,7 +181,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, html_url,
                                                        path_to_poc_cve_object, type_of_the_directory=DirectoryType.POC_DIRECTORY)
             else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+                logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
         else:
             path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object)
@@ -133,23 +189,23 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 await self._working_with_extract_data(cve_id, pattern_of_cve_object_in_file, html_url,
                                                        path_to_poc_cve_object, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+                logger.error(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
 
-    async def _get_all_topics_in_one_string(self, list_of_topics: List[Edge]) -> str:
+    async def _get_all_topics_in_one_string(self, list_of_topics: List[TopicContent]) -> str:
+        '''Gets all topics in a single string.'''
         topic_list = [each_topic.node.topic.name for each_topic in list_of_topics]
         topic_string = " ".join(topic_list)
         return topic_string
-
-    async def fast_search(self, string_interval: StringInterval):
-        query_intervals = await create_intervals(string_interval)
-        await self._fast_search_by_github_api(query_intervals)
         
     async def update(self, rewrite_last_date_scrapping: bool=False):
-        new_string_interval = await return_last_current_intervals_for_poc_update()
-        query_intervals = await create_intervals(new_string_interval)
-        await self._fast_search_by_github_api(query_intervals)
+        '''Updates PoCs with new data intervals.'''
+        new_string_interval = await return_last_and_current_intervals_for_poc_update()
+        if rewrite_last_date_scrapping:
+            await write_last_date_scraping("LAST_DATE_SCRAPPING_POC_UPDATE")
+        await self.start_search(new_string_interval)
 
     async def _traverse_cve_database_all_directories_at_once(self):
+        '''Traverses the entire CVE database in all directories at once.'''
         tasks = [
             self._traverse_cve_database_on_pc_by_path(os.getenv("PATH_TO_CVE_YEAR_DIRECTORY").format(year))
             for year in range(1999, datetime.now().year + 1)
@@ -157,6 +213,7 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
         await asyncio.gather(*tasks)
 
     async def _traverse_cve_database_on_pc_by_path(self, path: str):
+        '''Traverses the CVE database on the PC by the specified path.'''
         for root, dirs, files in os.walk(path):
             if '.git' in dirs:
                 dirs.remove('.git')
@@ -168,18 +225,20 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     cve_id = os.path.splitext(file)[0]
                     cve_need_to_processing = await self._handle_cve_id(cve_id)
                     if cve_need_to_processing.need:
-                        print(cve_id)
+                        logger.debug(cve_id)
                         poc_object = await self._generate_poc_object(cve_file_path, cve_need_to_processing)
                         await process_of_distribute_poc(cve_id, poc_object,self._search_choice)
-
+ 
     async def _prepare_for_fix_year_scrapping(self) -> str:
+        '''Prepares for fixing the year scraping.'''
         print("Please input year ")
-        year = input()
-        if int(year) > datetime.now().year:
+        year = int(input())
+        if year > datetime.now().year:
             raise Exception(f"That year {year} greater than current year")
         return year
 
     async def _handle_cve_id(self, cve_id: str) -> CVEIDProcessing:
+        '''Handles the CVE ID and returns processing information.'''
         try:
             match self._search_choice:
                 case POCSearchMethod.GITHUB_API_SEARCH:
@@ -191,25 +250,28 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     items_from_api_answer = GraphQLAnswerModel(**data)
                     return CVEIDProcessing(items_from_api_answer.data.search.repositoryCount > 0, items_from_api_answer.data.search.edges)
         except ValidationError as e:
-                raise ValidationError(f"Validation error was occured {e}")
+                logger.warning(f"Validation error was occured in function handle cve id {e}")
+                raise ValidationError
         
     async def _wait_before_next_request(self, response: aiohttp.ClientResponse):
+        '''Waits before the next API request based on rate limit information.'''
         limit = int(response.headers.get("X-RateLimit-Remaining", 0))
         reset_at_str = response.headers.get("X-RateLimit-Reset", "")
         DELTA = 3
-        print(limit)
+        logger.debug(f"Wait before next request function remaining {limit}")
         if not reset_at_str or limit <= datetime.now().year % 100:
             reset_at = datetime.utcnow()
             reset_at_unix_timestamp = int(reset_at_str)
             reset_at = datetime.utcfromtimestamp(reset_at_unix_timestamp)
             time_to_wait = max(0, (reset_at - datetime.utcnow()).total_seconds())                
             if time_to_wait > 0:
-                print(f"Rate limit exceeded, waiting for {time_to_wait} seconds.")
+                logger.debug(f"Rate limit exceeded, waiting for {time_to_wait} seconds.")
                 await asyncio.sleep(time_to_wait + DELTA)
         else:
             await asyncio.sleep(0.33)
 
     async def _create_post_request_on_cve_id_grapql_method(self, cve_id: str) -> dict:
+        '''Creates a POST request on the CVE ID using the GraphQL method.'''
         try:
             query = GRAPHQL_QUERY.format(cve_id)
             async with aiohttp.ClientSession() as session:
@@ -219,18 +281,20 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     data = await response.json()
                     return data
         except ServerDisconnectedError as e:
-            print(f"ServerDisconnectedError: {e}")
+            logger.warning(f"ServerDisconnectedError: {e}")
             raise
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.warning(f"An unexpected error occurred: {e}")
             raise
                     
     async def _generate_poc_object(self,path_to_cve_file: str, cve_need_to_processing: CVEIDProcessing):
+        '''Generates a PoC object based on the path to the CVE file and processing information.'''
         content_from_file = await read_file_by_path(path_to_cve_file)
         description = await self._extract_description(content_from_file)
         return POCModel(description, cve_need_to_processing.github_urls)
     
     async def _create_request_on_cve_id(self, cve_id: str) -> dict:
+        '''Creates a GET request on the CVE ID using the GitHub API.'''
         try:        
             async with aiohttp.ClientSession() as session:
                 async with session.get(self._url.format(cve_id), headers=self._headers) as response:
@@ -239,92 +303,26 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                     data = await response.json()
                     remaining_requests = response.headers.get('X-RateLimit-Remaining')
                     total_requests = response.headers.get('X-RateLimit-Limit')
-                    print(f"Requests remaining: {remaining_requests}")
-                    print(f"Total requests allowed: {total_requests}")
+                    logger.debug(f"Requests remaining: {remaining_requests}")
+                    logger.debug(f"Total requests allowed: {total_requests}")
                     return data
         except aiohttp.ClientResponseError as e:
-            print(f"Error fetching data: {e}")
+            logger.warning(f"Error fetching data: {e}")
         except aiohttp.ClientError as e:
-            print(f"Client error: {e}")
+            logger.warning(f"Client error: {e}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-    
-    async def _fast_search_by_github_api(self, intervals: List[StringInterval]):
-        for i in range(0, len(intervals)):
-            since, until = intervals[i].first_interval, intervals[i].second_interval
-            new_url = self._special_url_for_update.format(since, until)
-            pages_on_query = await how_many_pages_by_query(new_url, per_search=30)
-            #await self._process_each_page(new_url, 0)
-            tasks = [self._process_each_page(new_url, page) for page in range(0, pages_on_query + 1)]
-            await asyncio.gather(*tasks)
-
-    async def _process_each_page(self, new_url: str, page: int):
-        data = await return_data_from_query(url=new_url, headers=self._headers, page=page)
-        if not data.get("items"):
-            print("I AM HERE", new_url)
-            await asyncio.sleep(2)   
-        if data.get("items"):
-            for api_answer in data.get("items"):
-                cve_ids_from_repository_name = await self._extract_cve_ids(api_answer.get("name"))
-                cve_ids_from_repository_description = await self._extract_cve_ids(api_answer.get("description"))
-                
-                if cve_ids_from_repository_name:
-                    await self._process_each_cve_id(cve_ids=cve_ids_from_repository_name, api_answer=api_answer)
-                elif cve_ids_from_repository_description:
-                    await self._process_each_cve_id(cve_ids=cve_ids_from_repository_description, api_answer=api_answer)
-                else:
-                    all_topics_in_one_string = await self._return_topics_like_one_string(api_answer)
-                    if all_topics_in_one_string:
-                        cve_ids_from_repository_topics = await self._extract_cve_ids(all_topics_in_one_string)
-                        if cve_ids_from_repository_topics:
-                            await self._process_each_cve_id(cve_ids=cve_ids_from_repository_topics, api_answer=api_answer)
-
-    async def _return_topics_like_one_string(self, api_answer: dict) -> str:
-        topics = await self._get_topics_from_api_answer(api_answer)
-        if topics:
-            for topic in topics:
-                all_topics_in_one_string = " ".join(topic)
-                return all_topics_in_one_string
-        return ""
-    
-    async def _get_topics_from_api_answer(self, api_answer: dict) -> List[str]:
-        return api_answer.get("topics")
-
-    async def _process_each_cve_id(self, cve_ids: List[str], api_answer: dict):
-        for cve_id in cve_ids:
-            await self._process_each_cve_id_from_different_sources(cve_id, api_answer)
-
-    async def _process_each_cve_id_from_different_sources(self, cve_id: str, api_answer: dict):
-        pattern_of_cve_object_in_file = None
-        pattern_of_poc_object_in_file = None
-        path_to_poc_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.POC_DIRECTORY)
-        if os.path.exists(path_to_poc_cve_object):
-            pattern_of_poc_object_in_file = await read_file_by_path(path_to_poc_cve_object)
-            if pattern_of_poc_object_in_file is not None:
-                await self._working_with_extract_data(cve_id, pattern_of_poc_object_in_file, api_answer.get("html_url"),
-                                                       path_to_poc_cve_object, type_of_the_directory=DirectoryType.POC_DIRECTORY)
-            else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
-        else:
-            path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
-            pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object)
-            if pattern_of_cve_object_in_file is not None:
-                await self._working_with_extract_data(cve_id, pattern_of_cve_object_in_file, api_answer.get("html_url"),
-                                                       path_to_poc_cve_object, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
-            else:
-                print(f"That cve {cve_id} was not added in processing query because returning value from reading the file is None")
+            logger.warning(f"An unexpected error occurred: {e}")
         
     async def _working_with_extract_data(self, cve_id: str, pattern_of_some_objects: str, new_github_url: str, 
                                      path_to_new_poc_object: str, type_of_the_directory: DirectoryType):
-        print(f"Working in extract data {cve_id}", type_of_the_directory.name)
-        
+        '''Gets data for the CVE: description, URLs, name.'''
         description = await self._extract_description(pattern_of_some_objects)
         
         if not description:
             path_to_cve_object = await return_location_of_cve_object(cve_id, type_of_the_directory=DirectoryType.CVE_DATABASE_DIRECTORY)
             pattern_of_cve_object_in_file = await read_file_by_path(path_to_cve_object, DirectoryType.CVE_DATABASE_DIRECTORY)
             if pattern_of_cve_object_in_file is None:
-                print(f"No data in the file or the file doesn't exist for CVE: {cve_id}")
+                logger.warning(f"No data in the file or the file doesn't exist for CVE: {cve_id}")
                 return
 
             description = await self._extract_description(pattern_of_cve_object_in_file)
@@ -363,9 +361,3 @@ class GithubPOCSearcher: #Переименовать в github poc searcher
                 cve_ids.append(cve_id)
             return cve_ids
         return []
-
-async def main():
-    a = GithubPOCSearcher()
-    await a.fast_search_v2(StringInterval("2022-01-01", "2022-06-01"))    
-
-asyncio.run(main())
