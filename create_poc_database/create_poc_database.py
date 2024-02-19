@@ -86,7 +86,7 @@ class POCDatabase(GithubManager):
 
     async def update_database(self, rewrite_last_date: bool=True):
         instance_of_poc_searcher = GithubPOCSearcher()
-        await instance_of_poc_searcher.update()
+        await instance_of_poc_searcher.update(rewrite_last_date)
         await self.add_in_index()   
         await self.make_a_commit(f"Autoupdate {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         await self.push_changes_to_server()

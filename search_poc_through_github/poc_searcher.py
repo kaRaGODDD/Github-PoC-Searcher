@@ -11,7 +11,7 @@ from loguru import logger
 from typing import List
 
 from datetime_manager.create_datetime_intervals import create_intervals
-from datetime_manager.return_last_date_and_current import return_last_current_intervals_for_poc_update
+from datetime_manager.return_last_date_and_current import return_last_and_current_intervals_for_poc_update
 
 from file_manager.write_file_by_poc_pattern import write_poc_with_full_path, write_new_poc_object
 from file_manager.process_of_distribution_poc import process_of_distribute_poc
@@ -56,8 +56,8 @@ class GithubPOCSearcher:
         missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
 
         if missing_env_variables:
-            logger.critical(f"Critical error: Missing required environment variables: {', '.join(missing_env_variables)}")
-            raise Exception(f"Critical error was found that parameters are not set, please set them {missing_env_variables}")
+            logger.critical(f"Critical error: Missing required environment variables for GithubPOCSearcher: {', '.join(missing_env_variables)}")
+            raise Exception(f"Critical error: Missing required environment variables for GithubPOCSearcher: {', '.join(missing_env_variables)}")
         
         self._github_token = os.getenv("GITHUB_TOKEN")
         self._name_of_the_poc_directory = os.getenv("NAME_OF_THE_POC_DIRECTORY")
@@ -69,7 +69,26 @@ class GithubPOCSearcher:
         self._special_url_for_update = os.getenv("GITHUB_SPECIAL_URL_FOR_UPDATE")
 
     async def start_search_by_traverse_directory(self, type_of_poc_searching: POCSearchType):
-        '''Starts the PoC search by traversing the CVE database directories.'''
+        '''Starts the PoC search by traversing the CVE database directories.
+
+        Args:
+            type_of_poc_searching (POCSearchType): Enum indicating the type of PoC search to perform.
+
+        POCSearchType:
+            - TRAVERSE_ALL_CVE_DIRECTORIES_CONSISTENTLY: Traverse all CVE directories consistently.
+            - TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY: Traverse directories based on the fixed year.
+            - TRAVERSE_ALL_DIRECTORIES_AT_ONCE: Traverse all directories at once.
+
+        Raises:
+            ServerDisconnectedError: Raised if there is a server disconnection during the traversal.
+
+        Notes:
+            - For TRAVERSE_FIX_YEAR_ON_CVE_DIRECTORY, the method expects a valid environment variable "PATH_TO_CVE_YEAR_DIRECTORY"
+            indicating the base path to CVE directories for a specific year.
+
+        Returns:
+            None
+        '''
         while True:
             try:
                 match type_of_poc_searching:
@@ -86,8 +105,8 @@ class GithubPOCSearcher:
                 await asyncio.sleep(5)
                 continue
             else:
-                break 
-    
+                break
+
     async def start_search(self, string_interval: StringInterval):
         '''Alternative search PoCs through GitHub with the help of GraphQL.'''
         query_intervals = await create_intervals(string_interval)
@@ -180,7 +199,7 @@ class GithubPOCSearcher:
         
     async def update(self, rewrite_last_date_scrapping: bool=False):
         '''Updates PoCs with new data intervals.'''
-        new_string_interval = await return_last_current_intervals_for_poc_update()
+        new_string_interval = await return_last_and_current_intervals_for_poc_update()
         if rewrite_last_date_scrapping:
             await write_last_date_scraping("LAST_DATE_SCRAPPING_POC_UPDATE")
         await self.start_search(new_string_interval)
@@ -213,8 +232,8 @@ class GithubPOCSearcher:
     async def _prepare_for_fix_year_scrapping(self) -> str:
         '''Prepares for fixing the year scraping.'''
         print("Please input year ")
-        year = input()
-        if int(year) > datetime.now().year:
+        year = int(input())
+        if year > datetime.now().year:
             raise Exception(f"That year {year} greater than current year")
         return year
 
