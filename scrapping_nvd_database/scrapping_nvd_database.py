@@ -3,6 +3,7 @@ import aiohttp
 import datetime
 import os
 
+from math import ceil
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from typing import List, Optional, Union
@@ -15,7 +16,7 @@ from datetime_manager.create_datetime_intervals import create_intervals
 
 from constants_and_other_stuff.pydantic_models import CveExploit
 from constants_and_other_stuff.structs import StringInterval
-from constants_and_other_stuff.enums import FileFormat, ScrapingType
+from constants_and_other_stuff.enums import FileFormat, ScrapingType, Sources
 
 
 load_dotenv()
@@ -65,7 +66,7 @@ class NVDScraper:
 
     async def _handle_intervals(self, type_of_scrapping: ScrapingType = ScrapingType.SCRAPING):
         try:
-            intervals = await create_intervals(self.string_interval)
+            intervals = await create_intervals(self.string_interval, Sources.NVD)
             match type_of_scrapping:
                 case ScrapingType.SCRAPING:
                     tasks = [self._handle_api_request(self._url.format(interval.first_interval + "T" + "00:00:00", interval.second_interval + "T" + "23:59:59"),
@@ -79,12 +80,14 @@ class NVDScraper:
 
     async def _handle_api_request(self, url: str, string_interval: StringInterval):
         try:
-            data = await self._return_data_from_request(url, string_interval)
-            match self._file_format: 
-                case FileFormat.MD:
-                    await self._handle_data(data.get("vulnerabilities", {}))
-                case FileFormat.JSON:
-                    await self._handle_data(data.get("vulnerabilities", {}),data)
+            how_many_pages_need_to_process = await self._return_total_result_per_query(url, string_interval)
+            for page in range(0, how_many_pages_need_to_process):
+                data = await self._return_data_from_request(url, string_interval, start_index=page*2000, per_page=2000)
+                match self._file_format: 
+                    case FileFormat.MD:
+                        await self._handle_data(data.get("vulnerabilities", {}))
+                    case FileFormat.JSON:
+                        await self._handle_data(data.get("vulnerabilities", {}),data)
         except Exception as e:
             logger.warning(f"An unexpected error occurred method handle_api request: {e}", url)
 
@@ -100,10 +103,20 @@ class NVDScraper:
                 case FileFormat.JSON:
                     await process_and_distribute_cve(cve_exploit,self._file_format,json_answer=cve_info)
 
-    async def _return_data_from_request(self, url: str, string_interval: StringInterval) -> Union[dict, None]:
+    async def _return_total_result_per_query(self, url: str, string_interval: StringInterval) -> int:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=self._headers) as response:
+                   response.raise_for_status()
+                   data = await response.json()
+            return ceil(data.get('totalResults', 0) / 2000)
+        except Exception as e:
+            logger.warning(f"Some exception was occured in return result per query", {e})
+
+    async def _return_data_from_request(self, url: str, string_interval: StringInterval, start_index: int, per_page: int) -> Union[dict, None]:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url + f"&startIndex={start_index}&resultsPerPage={per_page}",headers=self._headers) as response:
                     response.raise_for_status()
                     data = await response.json()
             return data
@@ -115,7 +128,7 @@ class NVDScraper:
             logger.error(f"An unexpected error occurred: {e}", url)
 
 async def main():
-    a = NVDScraper(StringInterval("2024-01-01","2024-02-23"))
+    a = NVDScraper(StringInterval("2021-08-04","2021-10-22"))
     await a.start_scraping()
 
 asyncio.run(main())
