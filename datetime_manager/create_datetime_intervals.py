@@ -24,7 +24,7 @@ async def _split_interval_by_parts(interval: StringInterval, source: Sources) ->
             case Sources.GITHUB:
                 next_month = min(current_date + relativedelta(days=1), end_date)
             case Sources.NVD:
-                next_month = min(current_date + relativedelta(month=1), end_date)
+                next_month = min(current_date + relativedelta(months=1), end_date)
         string_interval_object = StringInterval(current_date.strftime("%Y-%m-%d"),next_month.strftime("%Y-%m-%d"))
         dates.append(string_interval_object)
         current_date = next_month
