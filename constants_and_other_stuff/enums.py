@@ -31,3 +31,8 @@ class CveIDFromDifferentSources(Enum):
     FROM_REPOSITORY_NAME = auto()
     FROM_DESCRIPTION = auto()
     FROM_TOPICS = auto()
+
+
+class Sources(Enum):
+    GITHUB = auto()
+    NVD = auto()
