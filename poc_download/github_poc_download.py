@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List
 
 from dotenv import load_dotenv
-from github import Github
+from github import Github, Repository
 
 from constants_and_other_stuff.structs import RepositoryNameAndUserName
 from create_directories.create_directories_on_pc import create_directory_with_help_of_path
@@ -66,24 +66,42 @@ class GithubPOCDownloader:
         except Exception as e:
             print(f"Error during processing references: {e}")
 
-    async def _download_repos_with_compression(self, user_name_and_repository: RepositoryNameAndUserName, new_directory_path: str):
-        try:
-            user = self._github_object.get_user(user_name_and_repository.user_name)
-            repository = user.get_repo(user_name_and_repository.repository_name)
-            commits_list = repository.get_commits()
-            await create_directory_with_help_of_path(new_directory_path)
-            version_of_repository = 1
-            for commit in commits_list:
-                commit_hash = commit.sha
-                archive_filename = f"Version_of_repository_{version_of_repository}.zip"
-                archive_path = os.path.join(new_directory_path, archive_filename)
-                temp_clone_dir = tempfile.mkdtemp()
-                os.chdir(temp_clone_dir)
-                subprocess.run(["git", "clone", repository.clone_url, "."])
-                subprocess.run(["git", "archive", "-o", archive_path, commit_hash])
-                version_of_repository += 1
-        except Exception as e:
-            print(f"Error during repository download: {e}")
+    async def _download_repos_with_compression(
+                                            self,
+                                            user_name_and_repository: RepositoryNameAndUserName,
+                                            new_directory_path: str
+                                            ):
+            try:
+                user = self._github_object.get_user(user_name_and_repository.user_name)
+                repository = user.get_repo(user_name_and_repository.repository_name)
+                commits_list = repository.get_commits()
+                await create_directory_with_help_of_path(new_directory_path)
+                task = [
+                    self._process_commit(version + 1,
+                                        commits_list[version].sha,
+                                        new_directory_path,
+                                        repository
+                                        )
+                      for version in range(0, len(list(commits_list)))
+        
+                ]
+                await asyncio.gather(*task)
+            except Exception as e:
+                print(f"Error during repository download: {e}")
+
+    async def _process_commit(
+                            self,
+                            version_of_repository: int,
+                            commit_hash: str,
+                            new_directory_path: str,
+                            repository: Repository.Repository
+                            ):
+        archive_filename = f"Version_of_repository_{version_of_repository}.zip"
+        archive_path = os.path.join(new_directory_path, archive_filename)
+        temp_clone_dir = tempfile.mkdtemp()
+        os.chdir(temp_clone_dir)
+        subprocess.run(["git", "clone", repository.clone_url, "."])
+        subprocess.run(["git", "archive", "-o", archive_path, commit_hash])
 
     async def _replace_old_path_to_new(self, old_directory_path: str):
         try:
