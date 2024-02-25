@@ -98,11 +98,10 @@ class GithubPOCDownloader:
                             ):
         archive_filename = f"Version_of_repository_{version_of_repository}.zip"
         archive_path = os.path.join(new_directory_path, archive_filename)
-        temp_clone_dir = tempfile.mkdtemp()
-        os.chdir(temp_clone_dir)
-        subprocess.run(["git", "clone", repository.clone_url, "."])
-        subprocess.run(["git", "archive", "-o", archive_path, commit_hash])
-
+        with tempfile.TemporaryDirectory() as temp_clone_dir:
+            await asyncio.to_thread(subprocess.run, ["git", "clone", repository.clone_url, "."], cwd=temp_clone_dir)
+            await asyncio.to_thread(subprocess.run, ["git", "archive", "-o", archive_path, commit_hash], cwd=temp_clone_dir)
+            
     async def _replace_old_path_to_new(self, old_directory_path: str):
         try:
             return re.sub(self._poc_directory_name, self._poc_downloader_name, old_directory_path)
