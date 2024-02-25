@@ -62,7 +62,7 @@ class GithubPOCDownloader:
                 reference_without_prefix = reference.lstrip("https://github.com").split("/")
                 if reference_without_prefix:
                     user_name_and_repository = RepositoryNameAndUserName(reference_without_prefix[0], reference_without_prefix[1])
-                    await self._download_repos_with_compression(user_name_and_repository, new_directory_path)
+                    await self._download_repos_with_compression(user_name_and_repository, os.path.join(new_directory_path,user_name_and_repository.user_name))
         except Exception as e:
             print(f"Error during processing references: {e}")
 
@@ -101,7 +101,7 @@ class GithubPOCDownloader:
         with tempfile.TemporaryDirectory() as temp_clone_dir:
             await asyncio.to_thread(subprocess.run, ["git", "clone", repository.clone_url, "."], cwd=temp_clone_dir)
             await asyncio.to_thread(subprocess.run, ["git", "archive", "-o", archive_path, commit_hash], cwd=temp_clone_dir)
-            
+
     async def _replace_old_path_to_new(self, old_directory_path: str):
         try:
             return re.sub(self._poc_directory_name, self._poc_downloader_name, old_directory_path)
