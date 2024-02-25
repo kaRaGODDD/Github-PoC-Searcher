@@ -34,7 +34,7 @@ class GithubPOCDownloader:
         try:
             await self._download_multiple_directories()
         except Exception as e:
-            print(f"Error during download: {e}")
+            logger.error(f"Error during download: {e}")
 
     async def _download_multiple_directories(self):
         tasks = [
