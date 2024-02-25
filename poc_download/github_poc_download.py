@@ -22,6 +22,13 @@ logger.add('logs/GithubPOCDownloader.log', rotation="8:00", level="DEBUG", compr
 
 class GithubPOCDownloader:
     def __init__(self):
+        required_env_variables = ["PATH_TO_THE_POC_DIRECTORY", "POC_DOWNLOAD_DATABASE", "NAME_OF_THE_POC_DATABASE", "NAME_OF_THE_POC_DIRECTORY", "GITHUB_TOKEN", "PATH_TO_POC_YEAR_DIRECTORY"]
+        missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
+
+        if missing_env_variables:
+            logger.critical( f"Critical error: Missing required environment variables for GithubPOCDownloader: {', '.join(missing_env_variables)}")
+            raise Exception( f"Critical error: Missing required environment variables for GithubPOCDownloader: {', '.join(missing_env_variables)}")
+        
         self._path_to_the_poc_directory = os.getenv("PATH_TO_THE_POC_DIRECTORY")
         self._path_to_the_download_database = os.getenv("POC_DOWNLOAD_DATABASE")
         self._poc_downloader_name = os.getenv("NAME_OF_THE_POC_DATABASE")
