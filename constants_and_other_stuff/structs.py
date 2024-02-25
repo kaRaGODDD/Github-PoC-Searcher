@@ -35,6 +35,12 @@ class POCData(NamedTuple):
     description: str
     formatted_references: str
 
+
 class POCObject(NamedTuple):
     description: str
     github_url: str
+
+
+class RepositoryNameAndUserName(NamedTuple):
+    user_name: str
+    repository_name: str
