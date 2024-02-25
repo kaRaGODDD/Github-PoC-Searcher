@@ -3,8 +3,6 @@ import os
 import re
 import subprocess
 import tempfile
-import zipfile
-import shutil
 
 from datetime import datetime
 from typing import List
@@ -68,7 +66,6 @@ class GithubPOCDownloader:
         except Exception as e:
             print(f"Error during processing references: {e}")
 
-
     async def _download_repos_with_compression(self, user_name_and_repository: RepositoryNameAndUserName, new_directory_path: str):
         try:
             user = self._github_object.get_user(user_name_and_repository.user_name)
@@ -76,30 +73,17 @@ class GithubPOCDownloader:
             commits_list = repository.get_commits()
             await create_directory_with_help_of_path(new_directory_path)
             version_of_repository = 1
-
             for commit in commits_list:
                 commit_hash = commit.sha
                 archive_filename = f"Version_of_repository_{version_of_repository}.zip"
                 archive_path = os.path.join(new_directory_path, archive_filename)
-
                 temp_clone_dir = tempfile.mkdtemp()
                 os.chdir(temp_clone_dir)
-
-                # Клонирование репозитория
-                process = await asyncio.create_subprocess_exec("git", "clone", repository.clone_url, ".", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-                _, _ = await process.communicate()
-                await process.wait()
-
-                # Создание архива
-                new_process = await asyncio.create_subprocess_exec("git", "archive", "-o", archive_path, commit_hash, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-                _, _ = await new_process.communicate()
-                await new_process.wait()
-
+                subprocess.run(["git", "clone", repository.clone_url, "."])
+                subprocess.run(["git", "archive", "-o", archive_path, commit_hash])
                 version_of_repository += 1
-
         except Exception as e:
             print(f"Error during repository download: {e}")
-
 
     async def _replace_old_path_to_new(self, old_directory_path: str):
         try:
