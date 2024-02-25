@@ -83,7 +83,6 @@ class GithubPOCDownloader:
                                         repository
                                         )
                       for version in range(0, len(list(commits_list)))
-        
                 ]
                 await asyncio.gather(*task)
             except Exception as e:
@@ -97,6 +96,8 @@ class GithubPOCDownloader:
                             repository: Repository.Repository
                             ):
         archive_filename = f"Version_of_repository_{version_of_repository}.zip"
+        if os.path.exists(archive_filename):
+            return
         archive_path = os.path.join(new_directory_path, archive_filename)
         with tempfile.TemporaryDirectory() as temp_clone_dir:
             await asyncio.to_thread(subprocess.run, ["git", "clone", repository.clone_url, "."], cwd=temp_clone_dir)
