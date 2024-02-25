@@ -9,6 +9,7 @@ from typing import List
 
 from dotenv import load_dotenv
 from github import Github, Repository
+from loguru import logger
 
 from constants_and_other_stuff.structs import RepositoryNameAndUserName
 from create_directories.create_directories_on_pc import create_directory_with_help_of_path
@@ -16,6 +17,8 @@ from file_manager.read_files import read_file_by_path
 
 
 load_dotenv()
+
+logger.add('logs/GithubPOCDownloader.log', rotation="8:00", level="DEBUG", compression="zip")
 
 class GithubPOCDownloader:
     def __init__(self):
@@ -54,7 +57,7 @@ class GithubPOCDownloader:
                         new_directory_path = await self._replace_old_path_to_new(old_directory_path=cve_file_path_without_extention)
                         await self._processing_with_path_and_refs(all_github_references, new_directory_path)
         except Exception as e:
-            print(f"Error during file traversal: {e}")
+            logger.error(f"Error during file traversal: {e}")
 
     async def _processing_with_path_and_refs(self, all_github_references: List[str], new_directory_path: str):
         try:
@@ -64,7 +67,7 @@ class GithubPOCDownloader:
                     user_name_and_repository = RepositoryNameAndUserName(reference_without_prefix[0], reference_without_prefix[1])
                     await self._download_repos_with_compression(user_name_and_repository, os.path.join(new_directory_path,user_name_and_repository.user_name))
         except Exception as e:
-            print(f"Error during processing references: {e}")
+            logger.error(f"Error during processing references: {e}")
 
     async def _download_repos_with_compression(
                                             self,
@@ -86,7 +89,7 @@ class GithubPOCDownloader:
                 ]
                 await asyncio.gather(*task)
             except Exception as e:
-                print(f"Error during repository download: {e}")
+                logger.error(f"Error during repository download: {e}")
 
     async def _process_commit(
                             self,
@@ -107,20 +110,10 @@ class GithubPOCDownloader:
         try:
             return re.sub(self._poc_directory_name, self._poc_downloader_name, old_directory_path)
         except Exception as e:
-            print(f"Error during path replacement: {e}")
+            logger.error(f"Error during path replacement: {e}")
 
     async def _extract_all_references(self, data_from_file: str) -> List[str]:
         try:
             return re.findall("https:\/\/github.com[a-zA-z0-9@#$ ><?! -\/]+(?=\))", data_from_file)
         except Exception as e:
-            print(f"Error during references extraction: {e}")
-
-    async def update_all_knowest_poc_and_download_new_versions():
-        ...
-
-
-async def main():
-    a = GithubPOCDownloader()
-    await a.start_download()
-
-asyncio.run(main())
+            logger.error(f"Error during references extraction: {e}")
