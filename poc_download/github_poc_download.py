@@ -43,7 +43,7 @@ class GithubPOCDownloader:
         except Exception as e:
             logger.error(f"Error during download: {e}")
 
-    async def _download_multiple_directories(self):
+    async def _download_from_multiple_directories(self):
         tasks = [
             self._download_files_while_traversing_directory_consistently(self._poc_year_directory.format(year))
             for year in range(1999, datetime.now().year + 1)
