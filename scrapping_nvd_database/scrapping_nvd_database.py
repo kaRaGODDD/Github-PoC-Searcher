@@ -126,9 +126,3 @@ class NVDScraper:
             logger.error(f"Client error: {e}", url)
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}", url)
-
-async def main():
-    a = NVDScraper(StringInterval("2021-08-04","2021-10-22"))
-    await a.start_scraping()
-
-asyncio.run(main())
