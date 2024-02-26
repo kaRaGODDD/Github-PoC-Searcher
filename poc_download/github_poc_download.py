@@ -39,11 +39,11 @@ class GithubPOCDownloader:
 
     async def start_download(self):
         try:
-            await self._download_multiple_directories()
+            await self._download_from_multiple_directories()
         except Exception as e:
             logger.error(f"Error during download: {e}")
 
-    async def _download_multiple_directories(self):
+    async def _download_from_multiple_directories(self):
         tasks = [
             self._download_files_while_traversing_directory_consistently(self._poc_year_directory.format(year))
             for year in range(1999, datetime.now().year + 1)
@@ -104,7 +104,7 @@ class GithubPOCDownloader:
                             commit_hash: str,
                             new_directory_path: str,
                             repository: Repository.Repository
-                            ):
+                            ): 
         archive_filename = f"Version_of_repository_{version_of_repository}.zip"
         if os.path.exists(archive_filename):
             return
