@@ -72,19 +72,24 @@ class GithubPOCDownloader:
                 reference_without_prefix = reference.lstrip("https://github.com").split("/")
                 if reference_without_prefix:
                     user_name_and_repository = RepositoryNameAndUserName(reference_without_prefix[0], reference_without_prefix[1])
-                    await self._download_repos_with_compression(user_name_and_repository, os.path.join(new_directory_path,user_name_and_repository.user_name))
+                    await self._download_repos_with_compression(user_name_and_repository, new_directory_path, user_name_and_repository.user_name)
         except Exception as e:
             logger.error(f"Error during processing references: {e}")
 
     async def _download_repos_with_compression(
                                             self,
                                             user_name_and_repository: RepositoryNameAndUserName,
-                                            new_directory_path: str
+                                            new_directory_path: str,
+                                            user_name: str 
                                             ):
             try:
                 user = self._github_object.get_user(user_name_and_repository.user_name)
                 repository = user.get_repo(user_name_and_repository.repository_name)
+                language_of_repository = repository.language
+                if not language_of_repository:
+                    language_of_repository = "No_Language"
                 commits_list = repository.get_commits()
+                new_directory_path = os.path.join(new_directory_path, language_of_repository + "_" + user_name)
                 await create_directory_with_help_of_path(new_directory_path)
                 task = [
                     self._process_commit(version + 1,
@@ -103,8 +108,8 @@ class GithubPOCDownloader:
                             version_of_repository: int,
                             commit_hash: str,
                             new_directory_path: str,
-                            repository: Repository.Repository
-                            ): 
+                            repository: Repository.Repository,
+                            ):
         archive_filename = f"Version_of_repository_{version_of_repository}.zip"
         if os.path.exists(archive_filename):
             return
