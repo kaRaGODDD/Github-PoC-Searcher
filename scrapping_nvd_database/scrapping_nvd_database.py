@@ -27,7 +27,7 @@ logger.add('logs/NVD.log', rotation="8:00", level="DEBUG", compression="zip")
 class NVDScraper:
     def __init__(self, string_interval: StringInterval = StringInterval("2013-01-01", "2014-01-01"),
                   file_format: FileFormat = FileFormat.MD):
-        required_env_variables = ["NVD_API_URL", "NVD_API_KEY"]
+        required_env_variables = ["NVD_API_KEY"]
         missing_env_variables = [env_var for env_var in required_env_variables if os.getenv(env_var) is None]
 
         if missing_env_variables:
@@ -36,7 +36,7 @@ class NVDScraper:
         
         self.string_interval = string_interval
         self._file_format = file_format
-        self._url = os.getenv("NVD_API_URL")  
+        self._url = "https://services.nvd.nist.gov/rest/json/cves/2.0/?pubStartDate={}&pubEndDate={}"  
         self._nvd_api_key = os.getenv("NVD_API_KEY")
         self._headers = {'apiKey':self._nvd_api_key}
 
